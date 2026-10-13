@@ -74,8 +74,8 @@ st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v4.0)")
 st.markdown("### Multiscale Materials Informatics & Multi-Variable Solver Hub")
 st.markdown("---")
 
-# --- EXPANDED MULTI-VARIABLE INPUT PANEL (SIDEBAR) ---
-st.sidebar.header("🎛️ Multivariable Input Panel")
+# --- SIDEBAR: ELEMENTS & CONFIG ---
+st.sidebar.header("🎛️ Informatics Configuration")
 
 with st.sidebar.expander("⚛️ Periodic Table Elements", expanded=True):
     selected_elements = st.multiselect(
@@ -84,27 +84,12 @@ with st.sidebar.expander("⚛️ Periodic Table Elements", expanded=True):
         default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"]
     )
 
-with st.sidebar.expander("⚖️ Composition Ratios", expanded=True):
-    resin_ratio = st.slider("Resin Fraction (%)", 10.0, 90.0, 60.0, step=2.5)
-    hardener_ratio = st.slider("Hardener Fraction (%)", 5.0, 50.0, 25.0, step=2.5)
-    filler_ratio = max(0.0, 100.0 - (resin_ratio + hardener_ratio))
-    st.sidebar.metric("Filler / Additive Fraction (%)", f"{filler_ratio:.1f}%")
-
-with st.sidebar.expander("🌡️ Processing & Environment", expanded=False):
-    curing_temp = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
-    processing_pressure = st.number_input("Processing Pressure (MPa)", min_value=0.1, max_value=50.0, value=5.0, step=0.5)
-
-with st.sidebar.expander("📊 Initial Mechanical Properties", expanded=False):
-    youngs_modulus = st.number_input("Initial Young's Modulus (GPa)", min_value=1.0, max_value=500.0, value=70.0, step=5.0)
-    density = st.number_input("Density (g/cm³)", min_value=0.5, max_value=20.0, value=2.7, step=0.1)
-    poissons_ratio = st.slider("Poisson's Ratio", min_value=0.0, max_value=0.5, value=0.33, step=0.01)
-
-with st.sidebar.expander("⚙️ Solver Configuration", expanded=False):
+with st.sidebar.expander("⚙️ Solver Settings", expanded=False):
     tensor_rank = st.slider("Tensor Resolution Rank", min_value=10, max_value=50, value=25, step=5)
     inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
     optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
 
-# --- SECTION 1: VISUALIZATIONS (2D Heatmaps & 3D Volumetric State) ---
+# --- SECTION 1: VISUALIZATIONS ---
 col_v1, col_v2 = st.columns(2)
 
 with col_v1:
@@ -112,9 +97,7 @@ with col_v1:
     x_vals = np.linspace(-5, 5, tensor_rank)
     y_vals = np.linspace(-5, 5, tensor_rank)
     X, Y = np.meshgrid(x_vals, y_vals)
-    # Matrix influenced by resin ratio, temperature, and baseline Young's modulus
-    scaling_influence = (resin_ratio / 50.0) * (curing_temp / 150.0) * (youngs_modulus / 70.0)
-    Z = scaling_influence * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
+    Z = np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
     
     fig_2d = px.imshow(Z, x=x_vals, y=y_vals, color_continuous_scale="Viridis",
                        labels=dict(x="Spatial X", y="Spatial Y", color="Intensity"))
@@ -134,29 +117,35 @@ with col_v2:
 
 st.markdown("---")
 
-# --- SECTION 2: SOLVER, RESULTS TABLE & PREDICTION HUB ---
-st.subheader("📐 SciPy Inverse Optimization & Informatics Hub")
+# --- SECTION 2: MULTI-INPUT CONTROL CENTER & SOLVER ---
+st.subheader("📐 Multi-Input Control Center & SciPy Solver")
 
 col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
-    st.markdown("#### Execute Multivariable Minimization")
-    tensor_scaling_factor = st.number_input("Tensor Scaling Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
-    run_solver = st.button("Run Inverse Optimization Solver", use_container_width=True)
+    st.markdown("#### 🎛️ Multivariable Input Boxes")
     
-    st.markdown("#### Compound Signature Query")
-    prediction_query = st.text_input("Enter compound code / signature:", "ITRE-DFT-SYNTH-99")
+    # Multiple interactive text/number input boxes right on the main screen
+    tensor_scaling_factor = st.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
+    curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
+    initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
+    initial_beta_guess = st.number_input("Initial Beta Guess", value=1.0, step=0.1)
+    
+    prediction_query = st.text_input("Compound Signature Query:", "ITRE-EPOXY-404")
+    
+    run_solver = st.button("Run Inverse Optimization Solver", use_container_width=True)
 
 with col_res:
-    st.markdown("#### Solver Output & Results Table")
+    st.markdown("#### 📊 Solver Output & Results Table")
     
+    # Scale matrix using user input boxes
     Z_scaled = Z * tensor_scaling_factor
     
     def objective_func(params):
         a, b = params
         return np.sum((Z_scaled - (a * np.sin(X) + b * np.cos(Y)))**2)
     
-    initial_guess = [1.0, 1.0]
+    initial_guess = [initial_alpha_guess, initial_beta_guess]
     opt_result = minimize(objective_func, initial_guess, method=optimizer_method, tol=inversion_tolerance)
     
     st.markdown(f"""
@@ -168,8 +157,8 @@ with col_res:
     """, unsafe_allow_html=True)
     
     results_df = pd.DataFrame({
-        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Young's Modulus", "Density"],
-        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{youngs_modulus} GPa", f"{density} g/cm³"]
+        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Scale Factor", "Curing Temp"],
+        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{tensor_scaling_factor}", f"{curing_temp_input}°C"]
     })
     st.dataframe(results_df, use_container_width=True)
 
@@ -177,19 +166,19 @@ with col_res:
 st.markdown("---")
 st.subheader("🔬 DFT-Mapped Prediction Outcome Elements")
 
-def app_predict(query_str, elements_list, resin, temp, modulus):
+def app_predict(query_str, elements_list, temp):
     np.random.seed(abs(hash(query_str)) % (2**32))
     base_elements = [
         f"DFT-Optimized Matrix ({elements_list[0] if elements_list else 'C'})",
         f"Cross-linked Prepolymer Backbone (Temp: {temp}°C)",
-        f"Stiffness-Scaled Phase ({modulus} GPa Baseline)",
+        f"Secondary Element Phase ({elements_list[1] if len(elements_list)>1 else 'Si'})",
         "Silane Coupling Interfacial Agent",
         "Amine-Functionalized Curing Catalyst"
     ]
     return base_elements[:4]
 
 if prediction_query:
-    predicted_elements = app_predict(prediction_query, selected_elements, resin_ratio, curing_temp, youngs_modulus)
+    predicted_elements = app_predict(prediction_query, selected_elements, curing_temp_input)
     
     st.markdown(f"**Multiscale Predictions for Signature:** `{prediction_query}` using Elements: `{', '.join(selected_elements)}`")
     
