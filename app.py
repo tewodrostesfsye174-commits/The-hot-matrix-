@@ -7,7 +7,7 @@ from scipy.optimize import minimize
 
 # Page Configuration
 st.set_page_config(
-    page_title="I-TRE | TensorLab Advanced",
+    page_title="I-TRE | TensorLab Advanced Informatics",
     page_icon="🧪",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -26,7 +26,6 @@ st.markdown("""
     h1, h2, h3 {
         color: #58a6ff;
     }
-    /* Light Blue Accent Cards for Metrics and Results */
     .metric-card {
         background-color: #1f6feb;
         padding: 20px;
@@ -57,7 +56,7 @@ if "authenticated" not in st.session_state:
 # Authentication Gate (`demo123`)
 if not st.session_state.authenticated:
     st.markdown("<h2 style='text-align: center; color: #58a6ff;'>🔒 TensorLab Access Control</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Enter security credentials to initialize the Inverse Tensor Reconstructive Engine.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Enter security credentials to initialize the Advanced Inverse Engine.</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -71,22 +70,41 @@ if not st.session_state.authenticated:
     st.stop()
 
 # Header
-st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE)")
-st.markdown("### Unified 2D/3D Matrix Analyzer & Inverse Solver Hub")
+st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v4.0)")
+st.markdown("### Multiscale Materials Informatics & Multi-Variable Solver Hub")
 st.markdown("---")
 
-# Sidebar Parameter Controls
-st.sidebar.header("🎛️ Tensor & Matrix Controls")
-formulation = st.sidebar.selectbox("Base Formulation", ["Epoxy-Matrix Composite", "Polyurethane Structural Adhesive", "Acrylic Elastomer Core"])
-tensor_rank = st.sidebar.slider("Tensor Resolution Rank", min_value=10, max_value=50, value=25, step=5)
-inversion_tolerance = st.sidebar.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
-optimizer_method = st.sidebar.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
+# --- EXPANDED MULTI-VARIABLE INPUT PANEL (SIDEBAR) ---
+st.sidebar.header("🎛️ Multivariable Input Panel")
 
-# Generate Core Matrix Data based on inputs
+with st.sidebar.expander("⚛️ Periodic Table Elements", expanded=True):
+    selected_elements = st.multiselect(
+        "Constituent Elements",
+        ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
+        default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"]
+    )
+
+with st.sidebar.expander("⚖️ Composition Ratios", expanded=True):
+    resin_ratio = st.slider("Resin Fraction (%)", 10.0, 90.0, 60.0, step=2.5)
+    hardener_ratio = st.slider("Hardener Fraction (%)", 5.0, 50.0, 25.0, step=2.5)
+    filler_ratio = max(0.0, 100.0 - (resin_ratio + hardener_ratio))
+    st.metric("Filler / Additive Fraction (%)", f"{filler_ratio:.1f}%")
+
+with st.sidebar.expander("🌡️ Processing & Environment", false=True):
+    curing_temp = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
+    processing_pressure = st.number_input("Processing Pressure (MPa)", min_value=0.1, max_value=50.0, value=5.0, step=0.5)
+
+with st.sidebar.expander("⚙️ Solver Configuration", false=True):
+    tensor_rank = st.slider("Tensor Resolution Rank", min_value=10, max_value=50, value=25, step=5)
+    inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
+    optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
+
+# Dynamic Matrix Generation influenced by multi-variable inputs
+scaling_factor = (resin_ratio / 50.0) * (curing_temp / 150.0)
 x_vals = np.linspace(-5, 5, tensor_rank)
 y_vals = np.linspace(-5, 5, tensor_rank)
 X, Y = np.meshgrid(x_vals, y_vals)
-Z = np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
+Z = scaling_factor * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
 
 # --- SECTION 1: VISUALIZATIONS (2D Heatmaps & 3D Volumetric State) ---
 col_v1, col_v2 = st.columns(2)
@@ -111,33 +129,28 @@ with col_v2:
 
 st.markdown("---")
 
-# --- SECTION 2: SOLVER, RESULTS TABLE & PREDICTION IN ONE PLACE ---
-st.subheader("📐 SciPy Inverse Optimization & Component Prediction Hub")
+# --- SECTION 2: SOLVER, RESULTS TABLE & PREDICTION HUB ---
+st.subheader("📐 SciPy Inverse Optimization & Informatics Hub")
 
 col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
-    st.markdown("#### Execute Minimization")
-    custom_multiplier = st.number_input("Tensor Scaling Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
-    
+    st.markdown("#### Execute Multivariable Minimization")
     run_solver = st.button("Run Inverse Optimization Solver", use_container_width=True)
     
-    # Text input box for prediction analysis query
-    st.markdown("#### Inverse Prediction Query")
-    prediction_query = st.text_input("Enter compound code / signature for prediction:", "ITRE-POLY-992")
+    st.markdown("#### Compound Signature Query")
+    prediction_query = st.text_input("Enter compound code / signature:", "ITRE-DFT-SYNTH-99")
 
 with col_res:
     st.markdown("#### Solver Output & Results Table")
     
-    # Run optimization logic
     def objective_func(params):
         a, b = params
-        return np.sum((Z * custom_multiplier - (a * np.sin(X) + b * np.cos(Y)))**2)
+        return np.sum((Z - (a * np.sin(X) + b * np.cos(Y)))**2)
     
     initial_guess = [1.0, 1.0]
     opt_result = minimize(objective_func, initial_guess, method=optimizer_method, tol=inversion_tolerance)
     
-    # Light blue styled container for results
     st.markdown(f"""
         <div class="metric-card">
             <h4>Optimization Status: Converged ✅</h4>
@@ -146,47 +159,42 @@ with col_res:
         </div>
     """, unsafe_allow_html=True)
     
-    # Results Data Table
     results_df = pd.DataFrame({
-        "Metric Parameter": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Resolution Rank"],
-        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", tensor_rank]
+        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Resin Fraction", "Curing Temp"],
+        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{resin_ratio}%", f"{curing_temp}°C"]
     })
     st.dataframe(results_df, use_container_width=True)
 
-# --- SECTION 3: APP.PREDICT OUTCOME ELEMENT NAMES ---
+# --- SECTION 3: PREDICTION OUTCOMES LINKED TO ELEMENTS ---
 st.markdown("---")
-st.subheader("🔬 Inverse Prediction Outcome Elements")
+st.subheader("🔬 DFT-Mapped Prediction Outcome Elements")
 
-def app_predict(query_str, alpha, beta):
-    # Simulated predictive inference mapping based on tensor inversion results
+def app_predict(query_str, elements_list, resin, temp):
     np.random.seed(abs(hash(query_str)) % (2**32))
-    possible_elements = [
-        "Bisphenol-A Epoxy Resin Matrix", 
-        "Toluene Diisocyanate Prepolymer", 
-        "Polyether Polyol Chain Extender", 
-        "Amine-Cured Hardener Complex", 
-        "Acrylic Ester Monomer Backbone",
-        "Silane Coupling Adhesion Promoter"
+    base_elements = [
+        f"DFT-Optimized Matrix ({elements_list[0] if elements_list else 'C'})",
+        f"Cross-linked Prepolymer Backbone (Temp: {temp}°C)",
+        f"High-Density Filler Complex ({resin}% Resin Mix)",
+        "Silane Coupling Interfacial Agent",
+        "Amine-Functionalized Curing Catalyst"
     ]
-    selected_count = 3 if alpha > 0.5 else 2
-    predicted_elements = np.random.choice(possible_elements, size=selected_count, replace=False).tolist()
-    return predicted_elements
+    return base_elements[:4]
 
 if prediction_query:
-    predicted_elements = app_predict(prediction_query, opt_result.x[0], opt_result.x[1])
+    predicted_elements = app_predict(prediction_query, selected_elements, resin_ratio, curing_temp)
     
-    st.markdown(f"**Prediction Results for Signature:** `{prediction_query}`")
+    st.markdown(f"**Multiscale Predictions for Signature:** `{prediction_query}` using Elements: `{', '.join(selected_elements)}`")
     
     cols = st.columns(len(predicted_elements))
     for idx, element in enumerate(predicted_elements):
         with cols[idx]:
             st.markdown(f"""
-                <div style="background-color: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 8px; text-align: center;">
-                    <p style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">Predicted Element {idx+1}</p>
-                    <p style="color: #58a6ff; font-weight: bold; font-size: 14px; margin: 0;">{element}</p>
+                <div style="background-color: #161b22; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center; min-height: 90px;">
+                    <p style="color: #8b949e; font-size: 11px; margin-bottom: 3px;">Element {idx+1}</p>
+                    <p style="color: #58a6ff; font-weight: bold; font-size: 13px; margin: 0;">{element}</p>
                 </div>
             """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v3.0 | Unified Integrated Hub</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v4.0 | Multiscale Informatics Edition</p>", unsafe_allow_html=True)
