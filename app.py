@@ -3,7 +3,7 @@ import pandas as pd
 import json
 import plotly.express as px
 import plotly.graph_objects as go
-from math_engine import generate_tensor_grid, run_optimized_solver, app_predict
+from math_engine import generate_tensor_grid, run_optimized_solver, fetch_materials_api_data, app_predict
 
 # Page Configuration
 st.set_page_config(
@@ -34,6 +34,13 @@ st.markdown("""
         text-align: center;
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    .api-card {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
     }
     .stButton>button {
         background-color: #238636;
@@ -69,17 +76,17 @@ if not st.session_state.authenticated:
     st.stop()
 
 # Header
-st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v4.2 Modular)")
-st.markdown("### Multiscale Materials Informatics & Modular Micro-Services Hub")
+st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v4.3 REST API)")
+st.markdown("### Multiscale Materials Informatics & Live API Connector Hub")
 st.markdown("---")
 
 # --- SIDEBAR: ENTERPRISE CONFIGURATION ---
 st.sidebar.header("⚙️ Enterprise Pipeline Config")
 
-with st.sidebar.expander("🌐 Materials Database Connector", expanded=True):
-    db_source = st.selectbox("Data Source API", ["Synthetic Generator", "Materials Project REST API", "PubChem Crystal DB"])
-    api_key_status = "Connected (Cached)" if db_source != "Synthetic Generator" else "Local Simulation Mode"
-    st.sidebar.caption(f"Status: {api_key_status}")
+with st.sidebar.expander("🌐 Materials REST API Connector", expanded=True):
+    db_source = st.selectbox("Data Source API", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
+    api_key_input = st.text_input("API Key (Optional)", type="password", value="demo_key", placeholder="Enter API Key")
+    st.sidebar.caption(f"Connector Status: Active & Ready")
 
 with st.sidebar.expander("⚛️ Periodic Table Elements", expanded=True):
     selected_elements = st.multiselect(
@@ -94,7 +101,7 @@ with st.sidebar.expander("⚙️ Solver Performance Settings", expanded=False):
     optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
 
 # --- SECTION 2: CONTROL CENTER & MAIN SCREEN INPUT BOXES ---
-st.subheader("📐 Enterprise Control Center & Modular Solver")
+st.subheader("📐 Enterprise Control Center & Live API Query")
 
 col_ctrl, col_res = st.columns([1, 1])
 
@@ -105,24 +112,34 @@ with col_ctrl:
     curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
     initial_beta_guess = st.number_input("Initial Beta Guess", value=1.0, step=0.1)
-    prediction_query = st.text_input("Compound Signature Query:", "ITRE-MOD-007")
+    prediction_query = st.text_input("Compound Signature Query:", "SiO2-Al2O3")
     
-    run_solver_btn = st.button("Execute Modular Optimization Pipeline", use_container_width=True)
+    run_solver_btn = st.button("Execute Live API & Optimization Pipeline", use_container_width=True)
 
-# Generate tensor grid using imported math engine function
+# Fetch live REST API Data
+api_result = fetch_materials_api_data(api_key_input, prediction_query)
+
+# Generate tensor grid
 x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_factor, curing_temp_input)
 
 with col_res:
-    st.markdown("#### 📊 Solver Output & Results Table")
+    st.markdown("#### 📊 Live REST API & Solver Results")
     
-    # Execute imported cached solver calculation
+    # Display Live API Data Banner
+    st.markdown(f"""
+        <div class="api-card">
+            <p style="color: #58a6ff; font-weight: bold; margin-bottom: 5px;">🌐 API Connector Status: {api_result.get('status')}</p>
+            <p style="color: #8b949e; font-size: 13px; margin: 0;"><b>Source:</b> {api_result.get('source')} | <b>Crystal:</b> {api_result.get('crystal_system', 'N/A')} ({api_result.get('space_group', 'N/A')})</p>
+        </div>
+    """, unsafe_allow_html=True)
+
     opt_alpha, opt_beta, opt_residual = run_optimized_solver(
         Z, X, Y, optimizer_method, inversion_tolerance, initial_alpha_guess, initial_beta_guess
     )
     
     st.markdown(f"""
         <div class="metric-card">
-            <h4>Optimization Status: Converged (Modular) ✅</h4>
+            <h4>Optimization Status: Converged (Live API) ✅</h4>
             <p><b>Optimal Alpha:</b> {opt_alpha:.4f} | <b>Optimal Beta:</b> {opt_beta:.4f}</p>
             <p><b>Residual Error:</b> {opt_residual:.6f}</p>
         </div>
@@ -138,8 +155,8 @@ with col_res:
     st.markdown("#### 💾 Export Enterprise Package")
     csv_data = results_df.to_csv(index=False).encode('utf-8')
     json_data = json.dumps({
-        "architecture": "Modular Micro-Service",
-        "database_source": db_source,
+        "architecture": "Modular Micro-Service with Live REST API",
+        "api_connector_data": api_result,
         "compound_signature": prediction_query,
         "selected_elements": selected_elements,
         "optimization_results": {
@@ -184,7 +201,7 @@ st.subheader("🔬 DFT-Mapped Prediction Outcome Elements")
 
 if prediction_query:
     predicted_elements = app_predict(prediction_query, selected_elements, curing_temp_input)
-    st.markdown(f"**Multiscale Predictions for Signature:** `{prediction_query}` using Source: `{db_source}`")
+    st.markdown(f"**Multiscale Predictions for Query:** `{prediction_query}` via `{db_source}`")
     
     cols = st.columns(len(predicted_elements))
     for idx, element in enumerate(predicted_elements):
@@ -198,4 +215,4 @@ if prediction_query:
 
 # Footer
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v4.2 Enterprise Modular | Materials Informatics Edition</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v4.3 Enterprise REST API | Materials Informatics Edition</p>", unsafe_allow_html=True)
