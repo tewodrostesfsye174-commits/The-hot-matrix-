@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import json
-import time
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.optimize import minimize
@@ -114,46 +113,25 @@ def run_optimized_solver(Z_target, X_grid, Y_grid, method, tol, alpha_guess, bet
     res = minimize(objective_func, initial_guess, method=method, tol=tol)
     return float(res.x[0]), float(res.x[1]), float(res.fun)
 
-# --- SECTION 1: VISUALIZATIONS ---
-tensor_scaling_factor = st.sidebar.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
-curing_temp_input = st.sidebar.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
-
-x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_factor, curing_temp_input)
-
-col_v1, col_v2 = st.columns(2)
-
-with col_v1:
-    st.subheader("🔥 2D Spatial Stress Distribution")
-    fig_2d = px.imshow(Z, x=x_vals, y=y_vals, color_continuous_scale="Viridis",
-                       labels=dict(x="Spatial X", y="Spatial Y", color="Intensity"))
-    fig_2d.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=20, b=10), height=350)
-    st.plotly_chart(fig_2d, use_container_width=True)
-
-with col_v2:
-    st.subheader("🧊 3D Volumetric State")
-    fig_3d = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, colorscale="Plasma")])
-    fig_3d.update_layout(
-        scene=dict(xaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d"),
-                   yaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d"),
-                   zaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d")),
-        plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=0, r=0, t=20, b=0), height=350
-    )
-    st.plotly_chart(fig_3d, use_container_width=True)
-
-st.markdown("---")
-
-# --- SECTION 2: CONTROL CENTER & ASYNCHRONOUS SOLVER ---
+# --- SECTION 2: CONTROL CENTER & MAIN SCREEN INPUT BOXES ---
 st.subheader("📐 Enterprise Control Center & Cached Solver")
 
 col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
-    st.markdown("#### 🎛️ Parameters & Query")
+    st.markdown("#### 🎛️ Multivariable Main Screen Input Boxes")
+    
+    # Active input boxes right on the main screen interface
+    tensor_scaling_factor = st.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
+    curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
     initial_beta_guess = st.number_input("Initial Beta Guess", value=1.0, step=0.1)
     prediction_query = st.text_input("Compound Signature Query:", "ITRE-ENT-PRO-99")
     
     run_solver_btn = st.button("Execute Cached Optimization Pipeline", use_container_width=True)
+
+# Generate tensor grid using main screen inputs
+x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_factor, curing_temp_input)
 
 with col_res:
     st.markdown("#### 📊 Solver Output & Results Table")
@@ -197,6 +175,28 @@ with col_res:
         st.download_button("Download CSV Report", data=csv_data, file_name=f"{prediction_query}_report.csv", mime="text/csv", use_container_width=True)
     with export_col2:
         st.download_button("Download JSON Package", data=json_data, file_name=f"{prediction_query}_package.json", mime="application/json", use_container_width=True)
+
+# --- SECTION 1: VISUALIZATIONS ---
+st.markdown("---")
+col_v1, col_v2 = st.columns(2)
+
+with col_v1:
+    st.subheader("🔥 2D Spatial Stress Distribution")
+    fig_2d = px.imshow(Z, x=x_vals, y=y_vals, color_continuous_scale="Viridis",
+                       labels=dict(x="Spatial X", y="Spatial Y", color="Intensity"))
+    fig_2d.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=20, b=10), height=350)
+    st.plotly_chart(fig_2d, use_container_width=True)
+
+with col_v2:
+    st.subheader("🧊 3D Volumetric State")
+    fig_3d = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, colorscale="Plasma")])
+    fig_3d.update_layout(
+        scene=dict(xaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d"),
+                   yaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d"),
+                   zaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d")),
+        plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=0, r=0, t=20, b=0), height=350
+    )
+    st.plotly_chart(fig_3d, use_container_width=True)
 
 # --- SECTION 3: PREDICTION OUTCOMES LINKED TO ELEMENTS ---
 st.markdown("---")
