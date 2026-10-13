@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Enhanced Dark Mode Styling with Light Blue Accent Cards & Sliders
+# Enhanced Dark Mode Styling
 st.markdown("""
     <style>
     .stApp {
@@ -99,18 +99,16 @@ with st.sidebar.expander("⚙️ Solver Configuration", expanded=False):
     inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
     optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
 
-# Dynamic Matrix Generation influenced by multi-variable inputs
-scaling_factor = (resin_ratio / 50.0) * (curing_temp / 150.0)
-x_vals = np.linspace(-5, 5, tensor_rank)
-y_vals = np.linspace(-5, 5, tensor_rank)
-X, Y = np.meshgrid(x_vals, y_vals)
-Z = scaling_factor * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
-
 # --- SECTION 1: VISUALIZATIONS (2D Heatmaps & 3D Volumetric State) ---
 col_v1, col_v2 = st.columns(2)
 
 with col_v1:
     st.subheader("🔥 2D Spatial Stress Distribution")
+    x_vals = np.linspace(-5, 5, tensor_rank)
+    y_vals = np.linspace(-5, 5, tensor_rank)
+    X, Y = np.meshgrid(x_vals, y_vals)
+    Z = (resin_ratio / 50.0) * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
+    
     fig_2d = px.imshow(Z, x=x_vals, y=y_vals, color_continuous_scale="Viridis",
                        labels=dict(x="Spatial X", y="Spatial Y", color="Intensity"))
     fig_2d.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=20, b=10), height=350)
@@ -136,6 +134,7 @@ col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
     st.markdown("#### Execute Multivariable Minimization")
+    tensor_scaling_factor = st.number_input("Tensor Scaling Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
     run_solver = st.button("Run Inverse Optimization Solver", use_container_width=True)
     
     st.markdown("#### Compound Signature Query")
@@ -144,9 +143,11 @@ with col_ctrl:
 with col_res:
     st.markdown("#### Solver Output & Results Table")
     
+    Z_scaled = Z * tensor_scaling_factor
+    
     def objective_func(params):
         a, b = params
-        return np.sum((Z - (a * np.sin(X) + b * np.cos(Y)))**2)
+        return np.sum((Z_scaled - (a * np.sin(X) + b * np.cos(Y)))**2)
     
     initial_guess = [1.0, 1.0]
     opt_result = minimize(objective_func, initial_guess, method=optimizer_method, tol=inversion_tolerance)
@@ -160,8 +161,8 @@ with col_res:
     """, unsafe_allow_html=True)
     
     results_df = pd.DataFrame({
-        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Resin Fraction", "Curing Temp"],
-        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{resin_ratio}%", f"{curing_temp}°C"]
+        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Scale Factor", "Resin Fraction"],
+        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{tensor_scaling_factor}", f"{resin_ratio}%"]
     })
     st.dataframe(results_df, use_container_width=True)
 
