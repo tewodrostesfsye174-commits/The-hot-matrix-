@@ -94,6 +94,11 @@ with st.sidebar.expander("🌡️ Processing & Environment", expanded=False):
     curing_temp = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     processing_pressure = st.number_input("Processing Pressure (MPa)", min_value=0.1, max_value=50.0, value=5.0, step=0.5)
 
+with st.sidebar.expander("📊 Initial Mechanical Properties", expanded=False):
+    youngs_modulus = st.number_input("Initial Young's Modulus (GPa)", min_value=1.0, max_value=500.0, value=70.0, step=5.0)
+    density = st.number_input("Density (g/cm³)", min_value=0.5, max_value=20.0, value=2.7, step=0.1)
+    poissons_ratio = st.slider("Poisson's Ratio", min_value=0.0, max_value=0.5, value=0.33, step=0.01)
+
 with st.sidebar.expander("⚙️ Solver Configuration", expanded=False):
     tensor_rank = st.slider("Tensor Resolution Rank", min_value=10, max_value=50, value=25, step=5)
     inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
@@ -107,7 +112,9 @@ with col_v1:
     x_vals = np.linspace(-5, 5, tensor_rank)
     y_vals = np.linspace(-5, 5, tensor_rank)
     X, Y = np.meshgrid(x_vals, y_vals)
-    Z = (resin_ratio / 50.0) * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
+    # Matrix influenced by resin ratio, temperature, and baseline Young's modulus
+    scaling_influence = (resin_ratio / 50.0) * (curing_temp / 150.0) * (youngs_modulus / 70.0)
+    Z = scaling_influence * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
     
     fig_2d = px.imshow(Z, x=x_vals, y=y_vals, color_continuous_scale="Viridis",
                        labels=dict(x="Spatial X", y="Spatial Y", color="Intensity"))
@@ -161,8 +168,8 @@ with col_res:
     """, unsafe_allow_html=True)
     
     results_df = pd.DataFrame({
-        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Scale Factor", "Resin Fraction"],
-        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{tensor_scaling_factor}", f"{resin_ratio}%"]
+        "Parameter Metric": ["Alpha Coefficient", "Beta Coefficient", "Residual Error", "Young's Modulus", "Density"],
+        "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{youngs_modulus} GPa", f"{density} g/cm³"]
     })
     st.dataframe(results_df, use_container_width=True)
 
@@ -170,19 +177,19 @@ with col_res:
 st.markdown("---")
 st.subheader("🔬 DFT-Mapped Prediction Outcome Elements")
 
-def app_predict(query_str, elements_list, resin, temp):
+def app_predict(query_str, elements_list, resin, temp, modulus):
     np.random.seed(abs(hash(query_str)) % (2**32))
     base_elements = [
         f"DFT-Optimized Matrix ({elements_list[0] if elements_list else 'C'})",
         f"Cross-linked Prepolymer Backbone (Temp: {temp}°C)",
-        f"High-Density Filler Complex ({resin}% Resin Mix)",
+        f"Stiffness-Scaled Phase ({modulus} GPa Baseline)",
         "Silane Coupling Interfacial Agent",
         "Amine-Functionalized Curing Catalyst"
     ]
     return base_elements[:4]
 
 if prediction_query:
-    predicted_elements = app_predict(prediction_query, selected_elements, resin_ratio, curing_temp)
+    predicted_elements = app_predict(prediction_query, selected_elements, resin_ratio, curing_temp, youngs_modulus)
     
     st.markdown(f"**Multiscale Predictions for Signature:** `{prediction_query}` using Elements: `{', '.join(selected_elements)}`")
     
