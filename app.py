@@ -88,13 +88,13 @@ with st.sidebar.expander("⚖️ Composition Ratios", expanded=True):
     resin_ratio = st.slider("Resin Fraction (%)", 10.0, 90.0, 60.0, step=2.5)
     hardener_ratio = st.slider("Hardener Fraction (%)", 5.0, 50.0, 25.0, step=2.5)
     filler_ratio = max(0.0, 100.0 - (resin_ratio + hardener_ratio))
-    st.metric("Filler / Additive Fraction (%)", f"{filler_ratio:.1f}%")
+    st.sidebar.metric("Filler / Additive Fraction (%)", f"{filler_ratio:.1f}%")
 
-with st.sidebar.expander("🌡️ Processing & Environment", false=True):
+with st.sidebar.expander("🌡️ Processing & Environment", expanded=False):
     curing_temp = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     processing_pressure = st.number_input("Processing Pressure (MPa)", min_value=0.1, max_value=50.0, value=5.0, step=0.5)
 
-with st.sidebar.expander("⚙️ Solver Configuration", false=True):
+with st.sidebar.expander("⚙️ Solver Configuration", expanded=False):
     tensor_rank = st.slider("Tensor Resolution Rank", min_value=10, max_value=50, value=25, step=5)
     inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
     optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
