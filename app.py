@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import json
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.optimize import minimize
@@ -125,7 +126,6 @@ col_ctrl, col_res = st.columns([1, 1])
 with col_ctrl:
     st.markdown("#### 🎛️ Multivariable Input Boxes")
     
-    # Multiple interactive text/number input boxes right on the main screen
     tensor_scaling_factor = st.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
     curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
@@ -138,7 +138,6 @@ with col_ctrl:
 with col_res:
     st.markdown("#### 📊 Solver Output & Results Table")
     
-    # Scale matrix using user input boxes
     Z_scaled = Z * tensor_scaling_factor
     
     def objective_func(params):
@@ -161,6 +160,44 @@ with col_res:
         "Value": [f"{opt_result.x[0]:.4f}", f"{opt_result.x[1]:.4f}", f"{opt_result.fun:.6f}", f"{tensor_scaling_factor}", f"{curing_temp_input}°C"]
     })
     st.dataframe(results_df, use_container_width=True)
+    
+    # --- CSV & JSON EXPORT UTILITIES ---
+    st.markdown("#### 💾 Export Simulation Data")
+    
+    # CSV Conversion
+    csv_data = results_df.to_csv(index=False).encode('utf-8')
+    
+    # JSON Conversion Dictionary
+    json_data = json.dumps({
+        "compound_signature": prediction_query,
+        "selected_elements": selected_elements,
+        "curing_temperature_c": curing_temp_input,
+        "tensor_scale_factor": tensor_scaling_factor,
+        "optimization_results": {
+            "alpha": float(opt_result.x[0]),
+            "beta": float(opt_result.x[1]),
+            "residual_error": float(opt_result.fun),
+            "status": "Converged"
+        }
+    }, indent=4).encode('utf-8')
+
+    export_col1, export_col2 = st.columns(2)
+    with export_col1:
+        st.download_button(
+            label="Download CSV Report",
+            data=csv_data,
+            file_name=f"{prediction_query}_results.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    with export_col2:
+        st.download_button(
+            label="Download JSON Package",
+            data=json_data,
+            file_name=f"{prediction_query}_package.json",
+            mime="application/json",
+            use_container_width=True
+        )
 
 # --- SECTION 3: PREDICTION OUTCOMES LINKED TO ELEMENTS ---
 st.markdown("---")
