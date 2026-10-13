@@ -1,10 +1,9 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
 import json
 import plotly.express as px
 import plotly.graph_objects as go
-from scipy.optimize import minimize
+from math_engine import generate_tensor_grid, run_optimized_solver, app_predict
 
 # Page Configuration
 st.set_page_config(
@@ -70,8 +69,8 @@ if not st.session_state.authenticated:
     st.stop()
 
 # Header
-st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v4.1 Enterprise)")
-st.markdown("### Multiscale Materials Informatics & Asynchronous Solver Hub")
+st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v4.2 Modular)")
+st.markdown("### Multiscale Materials Informatics & Modular Micro-Services Hub")
 st.markdown("---")
 
 # --- SIDEBAR: ENTERPRISE CONFIGURATION ---
@@ -94,56 +93,36 @@ with st.sidebar.expander("⚙️ Solver Performance Settings", expanded=False):
     inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
     optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
 
-# --- OPTIMIZED CACHED MATH & SOLVER ENGINES ---
-@st.cache_data
-def generate_tensor_grid(rank, scale, temp):
-    x_vals = np.linspace(-5, 5, rank)
-    y_vals = np.linspace(-5, 5, rank)
-    X, Y = np.meshgrid(x_vals, y_vals)
-    Z = scale * (temp / 150.0) * np.sin(np.sqrt(X**2 + Y**2)) * np.exp(-0.1 * (X**2 + Y**2))
-    return x_vals, y_vals, X, Y, Z
-
-@st.cache_data
-def run_optimized_solver(Z_target, X_grid, Y_grid, method, tol, alpha_guess, beta_guess):
-    def objective_func(params):
-        a, b = params
-        return np.sum((Z_target - (a * np.sin(X_grid) + b * np.cos(Y_grid)))**2)
-    
-    initial_guess = [alpha_guess, beta_guess]
-    res = minimize(objective_func, initial_guess, method=method, tol=tol)
-    return float(res.x[0]), float(res.x[1]), float(res.fun)
-
 # --- SECTION 2: CONTROL CENTER & MAIN SCREEN INPUT BOXES ---
-st.subheader("📐 Enterprise Control Center & Cached Solver")
+st.subheader("📐 Enterprise Control Center & Modular Solver")
 
 col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
     st.markdown("#### 🎛️ Multivariable Main Screen Input Boxes")
     
-    # Active input boxes right on the main screen interface
     tensor_scaling_factor = st.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
     curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
     initial_beta_guess = st.number_input("Initial Beta Guess", value=1.0, step=0.1)
-    prediction_query = st.text_input("Compound Signature Query:", "ITRE-ENT-PRO-99")
+    prediction_query = st.text_input("Compound Signature Query:", "ITRE-MOD-007")
     
-    run_solver_btn = st.button("Execute Cached Optimization Pipeline", use_container_width=True)
+    run_solver_btn = st.button("Execute Modular Optimization Pipeline", use_container_width=True)
 
-# Generate tensor grid using main screen inputs
+# Generate tensor grid using imported math engine function
 x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_factor, curing_temp_input)
 
 with col_res:
     st.markdown("#### 📊 Solver Output & Results Table")
     
-    # Execute cached solver calculation
+    # Execute imported cached solver calculation
     opt_alpha, opt_beta, opt_residual = run_optimized_solver(
         Z, X, Y, optimizer_method, inversion_tolerance, initial_alpha_guess, initial_beta_guess
     )
     
     st.markdown(f"""
         <div class="metric-card">
-            <h4>Optimization Status: Converged (Cached) ✅</h4>
+            <h4>Optimization Status: Converged (Modular) ✅</h4>
             <p><b>Optimal Alpha:</b> {opt_alpha:.4f} | <b>Optimal Beta:</b> {opt_beta:.4f}</p>
             <p><b>Residual Error:</b> {opt_residual:.6f}</p>
         </div>
@@ -159,6 +138,7 @@ with col_res:
     st.markdown("#### 💾 Export Enterprise Package")
     csv_data = results_df.to_csv(index=False).encode('utf-8')
     json_data = json.dumps({
+        "architecture": "Modular Micro-Service",
         "database_source": db_source,
         "compound_signature": prediction_query,
         "selected_elements": selected_elements,
@@ -202,17 +182,6 @@ with col_v2:
 st.markdown("---")
 st.subheader("🔬 DFT-Mapped Prediction Outcome Elements")
 
-def app_predict(query_str, elements_list, temp):
-    np.random.seed(abs(hash(query_str)) % (2**32))
-    base_elements = [
-        f"DFT-Optimized Matrix ({elements_list[0] if elements_list else 'C'})",
-        f"Cross-linked Prepolymer Backbone (Temp: {temp}°C)",
-        f"Secondary Element Phase ({elements_list[1] if len(elements_list)>1 else 'Si'})",
-        "Silane Coupling Interfacial Agent",
-        "Amine-Functionalized Curing Catalyst"
-    ]
-    return base_elements[:4]
-
 if prediction_query:
     predicted_elements = app_predict(prediction_query, selected_elements, curing_temp_input)
     st.markdown(f"**Multiscale Predictions for Signature:** `{prediction_query}` using Source: `{db_source}`")
@@ -229,4 +198,4 @@ if prediction_query:
 
 # Footer
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v4.1 Enterprise | Materials Informatics Edition</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v4.2 Enterprise Modular | Materials Informatics Edition</p>", unsafe_allow_html=True)
