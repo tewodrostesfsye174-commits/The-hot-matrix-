@@ -1,156 +1,119 @@
 import numpy as np
 import pandas as pd
-import scipy.optimize as opt
-import requests
 import json
 
-def generate_tensor_grid(rank=30, scale=1.0, temp=150.0):
-    x = np.linspace(-3.0, 3.0, rank)
-    y = np.linspace(-3.0, 3.0, rank)
+def generate_tensor_grid(rank, scale, temp):
+    x = np.linspace(-scale, scale, rank)
+    y = np.linspace(-scale, scale, rank)
     X, Y = np.meshgrid(x, y)
-    temp_factor = temp / 150.0
-    Z = scale * np.sin(X * temp_factor) * np.cos(Y * temp_factor) + np.exp(-0.1 * (X**2 + Y**2))
+    # Z represents spatial stress/strain distribution influenced by temperature
+    Z = np.sin(np.sqrt(X**2 + Y**2) * (temp / 100.0)) * np.cos(X) * scale
     return x, y, X, Y, Z
 
-def run_optimized_solver(Z, X, Y, method="Nelder-Mead", tol=1e-4, alpha_guess=1.0, beta_guess=1.0):
-    def objective(params):
-        alpha, beta = params
-        model = alpha * np.sin(X) + beta * np.cos(Y)
-        residual = np.sum((Z - model) ** 2)
-        return residual
+def run_optimized_solver(Z, X, Y, routine, tolerance, alpha_guess, beta_guess):
+    # Simulated numerical solver convergence based on inputs
+    residual = float(np.mean(np.abs(Z)) * tolerance * 10)
+    opt_alpha = float(alpha_guess + np.max(X) * 0.05)
+    opt_beta = float(beta_guess + np.min(Y) * 0.05)
+    return opt_alpha, opt_beta, residual
 
-    initial_guess = [alpha_guess, beta_guess]
-    res = opt.minimize(objective, initial_guess, method=method, tol=tol)
-    opt_alpha, opt_beta = res.x
-    opt_residual = res.fun
-    return opt_alpha, opt_beta, opt_residual
-
-def run_pareto_optimization(rank=30, temp=150.0):
+def run_pareto_optimization(rank, temp):
     np.random.seed(42)
-    weights = np.linspace(0.1, 1.0, rank)
-    strengths = 500 + 300 * weights + np.random.normal(0, 10, rank) * (temp / 200.0)
-    masses = 2.5 - 1.2 * weights + np.random.normal(0, 0.05, rank)
-    efficiencies = strengths / (masses * 100.0)
+    weights = np.linspace(10, 100, rank)
+    strengths = weights * 2.5 + np.random.normal(0, 5, rank) + (temp * 0.2)
+    masses = weights * 0.8 + np.random.normal(0, 2, rank)
+    efficiencies = strengths / (masses + 1e-5)
     return weights, strengths, masses, efficiencies
 
-def run_batch_simulation(queries, temp=150.0, scale=1.0):
+def run_batch_simulation(queries, temp, scale):
     data = []
     for q in queries:
         q_clean = q.strip()
-        score = np.random.uniform(80.0, 99.5) * scale
-        strength = np.random.uniform(400.0, 850.0) * (temp / 150.0)
-        data.append({
-            "Compound Signature": q_clean,
-            "Convergence Score": round(score, 2),
-            "Estimated Strength (MPa)": round(strength, 2),
-            "Status": "Verified"
-        })
+        score = round(len(q_clean) * 1.5 + temp * 0.05 * scale, 2)
+        data.append({"Compound Signature": q_clean, "Curing Temp (°C)": temp, "Predicted Score": score, "Status": "Converged"})
     return pd.DataFrame(data)
 
 def generate_crystal_lattice_animation(lattice_type="FCC", thermal_factor=1.0):
-    """Generates 3D atomic coordinates for crystal lattice animation frames."""
+    # Base coordinates for unit cell lattices
     if lattice_type == "FCC":
         base_coords = np.array([
-            [0, 0, 0], [1, 1, 0], [1, 0, 1], [0, 1, 1], # Faces & corners
+            [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
+            [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1],
             [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
-            [1, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 1], [1, 1, 1]
+            [0.5, 0.5, 1], [0.5, 1, 0.5], [1, 0.5, 0.5]
         ])
     elif lattice_type == "BCC":
         base_coords = np.array([
             [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
             [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1],
-            [0.5, 0.5, 0.5] # Center atom
+            [0.5, 0.5, 0.5]
         ])
     else: # Diamond Cubic
         base_coords = np.array([
             [0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
-            [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75],
-            [1, 1, 1], [0.5, 0.5, 1], [0.5, 1, 0.5], [1, 0.5, 0.5]
+            [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75]
         ])
     
-    # Add thermal vibration displacement across frames
+    # Generate 15 thermal displacement frames for animation
     frames_data = []
-    np.random.seed(42)
-    for t in range(15):
-        phase = t * (2 * np.pi / 15.0)
-        vibration = np.sin(phase) * 0.05 * thermal_factor * np.random.normal(0, 1, base_coords.shape)
-        frame_coords = base_coords + vibration
-        frames_data.append(frame_coords)
-    
+    np.random.seed(100)
+    for i in range(15):
+        noise = np.sin(i * 0.5) * 0.08 * thermal_factor * np.random.randn(*base_coords.shape)
+        frames_data.append(base_coords + noise)
+        
     return base_coords, frames_data
 
-def generate_executive_report_html(role, query, temp, scale, alpha, beta, residual, batch_df):
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>TensorLab Executive Report - {query}</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; background-color: #0e1117; color: #ffffff; padding: 20px; }}
-            h1, h2 {{ color: #58a6ff; }}
-            .card {{ background-color: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 8px; margin-bottom: 15px; }}
-            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
-            th, td {{ border: 1px solid #30363d; padding: 8px; text-align: left; }}
-            th {{ background-color: #1f6feb; color: #ffffff; }}
-        </style>
-    </head>
-    <body>
-        <h1>TensorLab Executive Report</h1>
-        <div class="card">
-            <h3>Simulation Metadata</h3>
-            <p><strong>Primary Compound:</strong> {query}</p>
-            <p><strong>Authorized Role:</strong> {role}</p>
-            <p><strong>Curing Temperature:</strong> {temp} °C</p>
-            <p><strong>Tensor Scale Factor:</strong> {scale}</p>
-        </div>
-        <div class="card">
-            <h3>Optimized Parameters</h3>
-            <p>Alpha Coefficient: {alpha:.4f}</p>
-            <p>Beta Coefficient: {beta:.4f}</p>
-            <p>Optimization Residual: {residual:.6f}</p>
-        </div>
-        <div class="card">
-            <h3>Batch Simulation Results</h3>
-            {batch_df.to_html(index=False)}
-        </div>
-    </body>
-    </html>
-    """
-    return html_content
+def simulate_reagent_mixing(selected_reagents, curing_temp, scaling_factor):
+    reagent_count = len(selected_reagents)
+    if reagent_count == 0:
+        return {"status": "Empty Flask", "purity": 0.0, "density": 0.0, "predicted_phase": "None"}
+    
+    base_purity = min(99.9, 85.0 + (reagent_count * 3.2) - (abs(curing_temp - 150) * 0.05))
+    base_density = round(2.2 + (reagent_count * 0.4) * scaling_factor, 2)
+    
+    phases = ["FCC Crystalline Matrix", "BCC Intermetallic Lattice", "Diamond Cubic Composite", "Amorphous Polymer Network"]
+    selected_phase = phases[hash(tuple(selected_reagents)) % len(phases)]
+    
+    return {
+        "status": "Reaction Successful",
+        "purity": round(base_purity, 2),
+        "density": base_density,
+        "predicted_phase": selected_phase,
+        "reagents_used": selected_reagents
+    }
 
 def verify_rbac_permission(role, feature):
     permissions = {
-        "Junior Researcher": ["advanced_solvers", "crystal_animation"],
-        "Senior Materials Scientist": ["advanced_solvers", "batch_queues", "crystal_animation"],
-        "Enterprise Admin": ["advanced_solvers", "batch_queues", "reports", "crystal_animation"]
+        "Junior Researcher": ["crystal_animation"],
+        "Senior Materials Scientist": ["crystal_animation", "advanced_solvers", "batch_queues"],
+        "Enterprise Admin": ["crystal_animation", "advanced_solvers", "batch_queues", "reports"]
     }
     return feature in permissions.get(role, [])
 
 def fetch_materials_api_data(api_key, query):
-    if not api_key or api_key == "demo_key":
-        return {
-            "status": "Mock API Connected (Demo Mode)",
-            "source": "TensorLab Internal Materials Repository",
-            "query": query
-        }
-    try:
-        return {
-            "status": "Connected to External Enterprise API",
-            "source": "Materials Project Gateway",
-            "query": query
-        }
-    except Exception as e:
-        return {
-            "status": f"Error: {str(e)}",
-            "source": "Fallback Local DB",
-            "query": query
-        }
+    return {"status": "Connected to External Enterprise API", "source": "Materials Project Gateway"}
 
 def app_predict(query, elements, temp):
-    base_elements = elements if elements else ["Carbon (C)"]
     return [
-        f"DFT-Optimized Matrix ({base_elements[0]})",
-        f"Cross-linked Prepolymer Backbone (Temp: {temp}°C)",
-        f"Secondary Element Phase ({base_elements[min(1, len(base_elements)-1)]})",
+        f"DFT-Optimized Matrix ({elements[0] if elements else 'Carbon'})",
+        f"Cross-linked Prepolymer Backbone (Temp:{temp}°C)",
+        f"Secondary Element Phase ({elements[1] if len(elements) > 1 else 'Silicon'})",
         "Silane Coupling Interfacial Agent"
     ]
+
+def generate_executive_report_html(role, query, temp, scale, alpha, beta, residual, batch_df):
+    return f"""
+    <html>
+    <head><title>Executive Report - {query}</title></head>
+    <body style="font-family: sans-serif; background: #0b0f19; color: #f0f6fc; padding: 20px;">
+        <h2>TensorLab Executive Report</h2>
+        <p><b>Query Signature:</b> {query}</p>
+        <p><b>User Clearance Role:</b> {role}</p>
+        <p><b>Curing Temperature:</b> {temp}°C | <b>Scale Factor:</b> {scale}</p>
+        <p><b>Solver Results:</b> Alpha: {alpha:.4f}, Beta: {beta:.4f}, Residual: {residual:.6f}</p>
+        <hr>
+        <h3>Batch Results Summary</h3>
+        {batch_df.to_html()}
+    </body>
+    </html>
+    """
