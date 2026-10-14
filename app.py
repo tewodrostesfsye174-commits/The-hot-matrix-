@@ -157,9 +157,9 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
 
-# --- NEW SECTION: VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
+# --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK (DRIVES THE MATH) ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
-st.markdown("<p style='color: #8b949e; font-size: 13px;'>Select chemical reagents from the shelf, load them into the reaction flask, and synthesize custom compound matrices.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Mixing reagents in the flask automatically feeds and updates the core mathematical simulation engine.</p>", unsafe_allow_html=True)
 
 col_shelf, col_flask = st.columns([1, 1])
 
@@ -171,15 +171,15 @@ with col_shelf:
         "Iron Oxide (Fe2O3)", "Nitrogen Stabilizer (N2)"
     ]
     chosen_reagents = st.multiselect("Select Reagents for Synthesis", available_shelf, default=["Silicon Dioxide (SiO2)", "Carbon Nanotube (CNT)"])
-    synthesis_temp = st.slider("Flask Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=180.0, step=5.0)
+    synthesis_temp_input = st.slider("Flask Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=180.0, step=5.0)
 
 with col_flask:
     st.markdown("##### ⚗️ Reaction Flask Chamber")
     if st.button("Mix & Initiate Synthesis Reaction", use_container_width=True):
-        st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, synthesis_temp, 1.2)
+        st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, synthesis_temp_input)
     
     if "flask_result" not in st.session_state:
-        st.session_state.flask_result = {"status": "Ready to Mix", "purity": 0.0, "density": 0.0, "predicted_phase": "Awaiting Reaction", "reagents_used": []}
+        st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, 180.0)
     
     res = st.session_state.flask_result
     st.markdown(f"""
@@ -187,31 +187,36 @@ with col_flask:
             <span style="font-size: 24px;">🧪</span><br>
             <span style="color: #58a6ff; font-weight: 600; font-size: 14px;">Status: {res.get('status')}</span><br>
             <span style="font-size: 13px; color: #f0f6fc;">Predicted Phase: <b>{res.get('predicted_phase')}</b></span><br>
-            <span style="font-size: 12px; color: #8b949e;">Estimated Purity: {res.get('purity')}% &bull; Density: {res.get('density')} g/cm³</span>
+            <span style="font-size: 12px; color: #8b949e;">Purity: {res.get('purity')}% &bull; Density: {res.get('density')} g/cm³ &bull; Query: `{res.get('query_sig')}`</span>
         </div>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# --- SECTION 2: CONTROL PANEL & BATCH QUEUE ---
-st.markdown("#### Simulation Control Panel")
+# --- SECTION 2: CONTROL PANEL & BATCH QUEUE (DRIVEN BY FLASK OUTPUTS) ---
+st.markdown("#### Simulation Control Panel (Math Engine)")
 
 col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
-    tensor_scaling_factor = st.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
-    curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
+    # Automatically bound to Virtual Flask results or manual overrides
+    default_scale = res.get('derived_scale', 1.0)
+    default_temp = res.get('derived_temp', 180.0)
+    default_query = res.get('query_sig', 'SiO2-RBAC-01')
+
+    tensor_scaling_factor = st.number_input("Tensor Scale Factor", min_value=0.1, max_value=10.0, value=float(default_scale), step=0.1)
+    curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=float(default_temp), step=5.0)
     initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
     initial_beta_guess = st.number_input("Initial Beta Guess", value=1.0, step=0.1)
     
-    prediction_query = st.text_input("Primary Compound Query", "SiO2-RBAC-01")
+    prediction_query = st.text_input("Primary Compound Query", value=default_query)
     
     st.markdown("##### Batch Simulation Queue")
-    batch_input_str = st.text_area("Compound Signatures (Comma separated)", "SiO2-Alpha, Al2O3-Beta, Fe2O3-Gamma, TiC-Delta, SiC-Omega")
+    batch_input_str = st.text_area("Compound Signatures (Comma separated)", f"{default_query}, Al2O3-Beta, Fe2O3-Gamma, TiC-Delta")
     
     run_solver_btn = st.button("Execute Simulation Pipeline", use_container_width=True)
 
-# Fetch data and run solvers
+# Fetch data and run solvers using the bound variables
 api_result = fetch_materials_api_data(api_key_input, prediction_query)
 x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_factor, curing_temp_input)
 weights, strengths, masses, efficiencies = run_pareto_optimization(tensor_rank, curing_temp_input)
