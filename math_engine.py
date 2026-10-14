@@ -68,11 +68,50 @@ def run_batch_simulation(queries_list, temp, scale):
         })
     return pd.DataFrame(batch_results)
 
+def generate_executive_report_html(role, query, temp, scale, opt_alpha, opt_beta, residual, batch_df):
+    """Generates a structured HTML executive report package for download."""
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; color: #333; margin: 40px; }}
+            h1 {{ color: #1f6feb; border-bottom: 2px solid #1f6feb; padding-bottom: 10px; }}
+            h2 {{ color: #238636; margin-top: 30px; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+            th, td {{ border: 1px solid #ddd; padding: 10px; text-align: left; }}
+            th {{ background-color: #f6f8fa; }}
+            .metadata {{ background-color: #f1f8ff; padding: 15px; border-radius: 6px; margin-bottom: 20px; }}
+        </style>
+    </head>
+    <body>
+        <h1>TensorLab Enterprise Executive Report</h1>
+        <div class="metadata">
+            <p><b>User Role / Clearance:</b> {role}</p>
+            <p><b>Primary Compound Query:</b> {query}</p>
+            <p><b>Curing Temperature:</b> {temp} °C | <b>Tensor Scale Factor:</b> {scale}</p>
+            <p><b>Optimization Residual Error:</b> {residual:.6f}</p>
+        </div>
+        
+        <h2>Optimized Coefficients</h2>
+        <ul>
+            <li>Alpha Coefficient: {opt_alpha:.4f}</li>
+            <li>Beta Coefficient: {opt_beta:.4f}</li>
+        </ul>
+
+        <h2>Automated Batch Simulation Results</h2>
+        {batch_df.to_html(index=False)}
+        
+        <p style="margin-top: 40px; font-size: 12px; color: #666;">Generated securely via TensorLab Enterprise Informatics Engine.</p>
+    </body>
+    </html>
+    """
+    return html_content
+
 def verify_rbac_permission(role, feature_name):
     """Verifies if the assigned user role has clearance for specific enterprise actions."""
     permissions = {
-        "Enterprise Admin": ["all", "advanced_solvers", "api_keys", "override_convergence", "batch_queues"],
-        "Senior Materials Scientist": ["standard_solvers", "pareto_frontier", "api_keys", "batch_queues"],
+        "Enterprise Admin": ["all", "advanced_solvers", "api_keys", "override_convergence", "batch_queues", "reports"],
+        "Senior Materials Scientist": ["standard_solvers", "pareto_frontier", "api_keys", "batch_queues", "reports"],
         "Junior Researcher": ["standard_solvers", "view_reports"]
     }
     allowed_features = permissions.get(role, ["view_reports"])
