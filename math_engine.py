@@ -23,6 +23,25 @@ def run_optimized_solver(Z_target, X_grid, Y_grid, method, tol, alpha_guess, bet
     res = minimize(objective_func, initial_guess, method=method, tol=tol)
     return float(res.x[0]), float(res.x[1]), float(res.fun)
 
+@st.cache_data
+def run_pareto_optimization(rank, temp):
+    """Simulates a multi-objective Pareto frontier balancing mechanical strength vs thermal mass."""
+    weights = np.linspace(0.05, 0.95, 20)
+    strength_scores = []
+    cost_mass_scores = []
+    efficiency_indices = []
+    
+    for w in weights:
+        strength = float(70 + 25 * np.sin(w * np.pi) + (temp / 20.0) * w)
+        mass = float(30 + 40 * (1 - w) + 5 * np.cos(w))
+        efficiency = float((strength * w) / (mass * (1 - w + 0.1)))
+        
+        strength_scores.append(strength)
+        cost_mass_scores.append(mass)
+        efficiency_indices.append(efficiency)
+        
+    return weights, strength_scores, cost_mass_scores, efficiency_indices
+
 def fetch_materials_api_data(api_key, query_formula):
     """Connects to live REST API endpoints with secure fallback handling."""
     if not api_key or api_key == "demo_key":
