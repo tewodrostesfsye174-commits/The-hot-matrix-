@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
+import time
 import plotly.express as px
 import plotly.graph_objects as go
 from math_engine import (
@@ -261,14 +262,23 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
         selected_code = lattice_system.split(" ")[0]
         thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
         
-        animate_trigger = st.button("▶ Start Thermal Animation", use_container_width=True)
-        st.caption("Simulates atomic positions and thermal displacement across dynamic timeframes.")
+        if "anim_frame" not in st.session_state:
+            st.session_state.anim_frame = 0
+
+        play_loop = st.toggle("▶ Enable Live Thermal Animation", value=False)
+        st.caption("Simulates real-time atomic thermal displacement across dynamic timeframes.")
     
     with col_c2:
         base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
         
-        frame_idx = 7 if animate_trigger else 0
-        active_coords = frames_data[frame_idx]
+        if play_loop:
+            st.session_state.anim_frame = (st.session_state.anim_frame + 1) % len(frames_data)
+            active_coords = frames_data[st.session_state.anim_frame]
+            time.sleep(0.12)
+            st.rerun()
+        else:
+            st.session_state.anim_frame = 0
+            active_coords = frames_data[0]
         
         fig_crystal = go.Figure(
             data=[go.Scatter3d(
@@ -279,14 +289,14 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
                 textposition="top center"
             )],
             layout=go.Layout(
-                title=f"3D Lattice Dynamics: {lattice_system}",
+                title=dict(text=f"3D Lattice Dynamics: {lattice_system} (Frame {st.session_state.anim_frame+1}/15)", font=dict(size=13)),
                 scene=dict(
                     xaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
                     yaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
                     zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5])
                 ),
                 plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc",
-                margin=dict(l=0, r=0, t=30, b=0), height=380
+                margin=dict(l=0, r=0, t=35, b=0), height=380
             )
         )
         st.plotly_chart(fig_crystal, use_container_width=True)
