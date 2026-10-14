@@ -42,6 +42,16 @@ def run_pareto_optimization(rank, temp):
         
     return weights, strength_scores, cost_mass_scores, efficiency_indices
 
+def verify_rbac_permission(role, feature_name):
+    """Verifies if the assigned user role has clearance for specific enterprise actions."""
+    permissions = {
+        "Enterprise Admin": ["all", "advanced_solvers", "api_keys", "override_convergence"],
+        "Senior Materials Scientist": ["standard_solvers", "pareto_frontier", "api_keys"],
+        "Junior Researcher": ["standard_solvers", "view_reports"]
+    }
+    allowed_features = permissions.get(role, ["view_reports"])
+    return "all" in allowed_features or feature_name in allowed_features
+
 def fetch_materials_api_data(api_key, query_formula):
     """Connects to live REST API endpoints with secure fallback handling."""
     if not api_key or api_key == "demo_key":
