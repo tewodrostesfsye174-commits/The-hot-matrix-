@@ -23,18 +23,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Clean Enterprise Dark Mode Styling
+# Refined High-Contrast Enterprise Dark Mode Styling (Deep Navy-Slate Palette)
 st.markdown("""
     <style>
     .stApp {
-        background-color: #0e1117;
-        color: #ffffff;
+        background-color: #0b0f19;
+        color: #f0f6fc;
     }
-    .sidebar .sidebar-content {
-        background-color: #161b22;
+    .sidebar .sidebar-content, [data-testid="stSidebar"] {
+        background-color: #111625;
     }
-    h1, h2, h3 {
-        color: #58a6ff;
+    h1, h2, h3, h4, h5, h6 {
+        color: #58a6ff !important;
+        font-weight: 700;
+    }
+    p, span, label, .stMarkdown, .stText, div[data-baseweb="select"] {
+        color: #f0f6fc !important;
     }
     .metric-card {
         background-color: #1f6feb;
@@ -43,7 +47,7 @@ st.markdown("""
         color: #ffffff;
         text-align: center;
         margin-bottom: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
     }
     .api-card {
         background-color: #161b22;
@@ -65,11 +69,15 @@ st.markdown("""
         color: white;
         border-radius: 6px;
         border: none;
-        padding: 0.4rem 1rem;
+        padding: 0.5rem 1rem;
         font-weight: 600;
     }
     .stButton>button:hover {
         background-color: #2ea043;
+    }
+    .dataframe {
+        background-color: #161b22 !important;
+        color: #f0f6fc !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -180,7 +188,7 @@ with col_res:
     st.markdown(f"""
         <div class="metric-card">
             <div style="font-weight: 600; margin-bottom: 4px;">Optimization Converged</div>
-            <div style="font-size: 13px; color: #c9d1d9;">Max Efficiency: {max(efficiencies):.4f} &bull; Residual: {opt_residual:.6f}</div>
+            <div style="font-size: 13px; color: #f0f6fc;">Max Efficiency: {max(efficiencies):.4f} &bull; Residual: {opt_residual:.6f}</div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -220,17 +228,17 @@ col_v1, col_v2, col_v3 = st.columns(3)
 with col_v1:
     st.caption("2D Spatial Stress")
     fig_2d = px.imshow(Z, x=x_vals, y=y_vals, color_continuous_scale="Viridis")
-    fig_2d.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=10, b=10), height=280)
+    fig_2d.update_layout(plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc", margin=dict(l=10, r=10, t=10, b=10), height=280)
     st.plotly_chart(fig_2d, use_container_width=True)
 
 with col_v2:
     st.caption("3D Volumetric State")
     fig_3d = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, colorscale="Plasma")])
     fig_3d.update_layout(
-        scene=dict(xaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d"),
-                   yaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d"),
-                   zaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d")),
-        plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=0, r=0, t=10, b=0), height=280
+        scene=dict(xaxis=dict(backgroundcolor="#111625", gridcolor="#30363d"),
+                   yaxis=dict(backgroundcolor="#111625", gridcolor="#30363d"),
+                   zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d")),
+        plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc", margin=dict(l=0, r=0, t=10, b=0), height=280
     )
     st.plotly_chart(fig_3d, use_container_width=True)
 
@@ -239,7 +247,7 @@ with col_v3:
     fig_pareto = px.scatter(x=masses, y=strengths, color=efficiencies,
                             labels=dict(x="Mass / Cost", y="Strength (MPa)", color="Efficiency"),
                             color_continuous_scale="Turbo")
-    fig_pareto.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=10, b=10), height=280)
+    fig_pareto.update_layout(plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc", margin=dict(l=10, r=10, t=10, b=10), height=280)
     st.plotly_chart(fig_pareto, use_container_width=True)
 
 # --- SECTION: CRYSTALLINE STRUCTURE & THERMAL VIBRATION ANIMATION ---
@@ -252,43 +260,34 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
         lattice_system = st.selectbox("Lattice System", ["FCC (Face-Centered Cubic)", "BCC (Body-Centered Cubic)", "Diamond Cubic"])
         selected_code = lattice_system.split(" ")[0]
         thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
+        
+        animate_trigger = st.button("▶ Start Thermal Animation", use_container_width=True)
         st.caption("Simulates atomic positions and thermal displacement across dynamic timeframes.")
     
     with col_c2:
         base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
         
+        frame_idx = 7 if animate_trigger else 0
+        active_coords = frames_data[frame_idx]
+        
         fig_crystal = go.Figure(
             data=[go.Scatter3d(
-                x=base_coords[:, 0], y=base_coords[:, 1], z=base_coords[:, 2],
+                x=active_coords[:, 0], y=active_coords[:, 1], z=active_coords[:, 2],
                 mode='markers+text',
-                marker=dict(size=12, color=base_coords[:, 2], colorscale='Viridis', opacity=0.9),
-                text=[f"Atom {i+1}" for i in range(len(base_coords))],
+                marker=dict(size=12, color=active_coords[:, 2], colorscale='Viridis', opacity=0.9),
+                text=[f"Atom {i+1}" for i in range(len(active_coords))],
                 textposition="top center"
             )],
             layout=go.Layout(
                 title=f"3D Lattice Dynamics: {lattice_system}",
                 scene=dict(
-                    xaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d", range=[-0.5, 1.5]),
-                    yaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d", range=[-0.5, 1.5]),
-                    zaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d", range=[-0.5, 1.5])
+                    xaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
+                    yaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
+                    zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5])
                 ),
-                plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff",
-                margin=dict(l=0, r=0, t=30, b=0), height=380,
-                updatemenus=[dict(
-                    type="buttons",
-                    buttons=[dict(label="▶ Play Thermal Vibration",
-                                 method="animate",
-                                 args=[None, {"frame": {"duration": 150, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}])]
-                )]
-            ),
-            frames=[go.Frame(
-                data=[go.Scatter3d(
-                    x=frame[:, 0], y=frame[:, 1], z=frame[:, 2],
-                    mode='markers',
-                    marker=dict(size=12, color=frame[:, 2], colorscale='Viridis', opacity=0.9)
-                )],
-                name=str(k)
-            ) for k, frame in enumerate(frames_data)]
+                plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc",
+                margin=dict(l=0, r=0, t=30, b=0), height=380
+            )
         )
         st.plotly_chart(fig_crystal, use_container_width=True)
 else:
@@ -306,7 +305,7 @@ if prediction_query:
     for idx, element in enumerate(predicted_elements):
         with cols[idx]:
             st.markdown(f"""
-                <div style="background-color: #161b22; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center; min-height: 80px;">
+                <div style="background-color: #111625; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center; min-height: 80px;">
                     <span style="color: #8b949e; font-size: 11px;">Node {idx+1}</span><br>
                     <span style="color: #58a6ff; font-weight: 600; font-size: 12px;">{element}</span>
                 </div>
