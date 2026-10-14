@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import json
-import time
 import plotly.express as px
 import plotly.graph_objects as go
 from math_engine import (
@@ -13,7 +12,8 @@ from math_engine import (
     generate_executive_report_html,
     verify_rbac_permission, 
     fetch_materials_api_data, 
-    app_predict
+    app_predict,
+    simulate_reagent_mixing
 )
 
 # Page Configuration
@@ -49,6 +49,14 @@ st.markdown("""
         text-align: center;
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    }
+    .flask-card {
+        background-color: #161b22;
+        border: 2px dashed #58a6ff;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 15px;
     }
     .api-card {
         background-color: #161b22;
@@ -148,6 +156,42 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
     else:
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
+
+# --- NEW SECTION: VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
+st.markdown("#### 🧪 Virtual Synthesis Laboratory")
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Select chemical reagents from the shelf, load them into the reaction flask, and synthesize custom compound matrices.</p>", unsafe_allow_html=True)
+
+col_shelf, col_flask = st.columns([1, 1])
+
+with col_shelf:
+    st.markdown("##### 🗄️ Reagent Shelf")
+    available_shelf = [
+        "Silicon Dioxide (SiO2)", "Titanium Carbide (TiC)", 
+        "Aluminum Precursor (Al2O3)", "Carbon Nanotube (CNT)", 
+        "Iron Oxide (Fe2O3)", "Nitrogen Stabilizer (N2)"
+    ]
+    chosen_reagents = st.multiselect("Select Reagents for Synthesis", available_shelf, default=["Silicon Dioxide (SiO2)", "Carbon Nanotube (CNT)"])
+    synthesis_temp = st.slider("Flask Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=180.0, step=5.0)
+
+with col_flask:
+    st.markdown("##### ⚗️ Reaction Flask Chamber")
+    if st.button("Mix & Initiate Synthesis Reaction", use_container_width=True):
+        st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, synthesis_temp, 1.2)
+    
+    if "flask_result" not in st.session_state:
+        st.session_state.flask_result = {"status": "Ready to Mix", "purity": 0.0, "density": 0.0, "predicted_phase": "Awaiting Reaction", "reagents_used": []}
+    
+    res = st.session_state.flask_result
+    st.markdown(f"""
+        <div class="flask-card">
+            <span style="font-size: 24px;">🧪</span><br>
+            <span style="color: #58a6ff; font-weight: 600; font-size: 14px;">Status: {res.get('status')}</span><br>
+            <span style="font-size: 13px; color: #f0f6fc;">Predicted Phase: <b>{res.get('predicted_phase')}</b></span><br>
+            <span style="font-size: 12px; color: #8b949e;">Estimated Purity: {res.get('purity')}% &bull; Density: {res.get('density')} g/cm³</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
 
 # --- SECTION 2: CONTROL PANEL & BATCH QUEUE ---
 st.markdown("#### Simulation Control Panel")
@@ -261,43 +305,53 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
         lattice_system = st.selectbox("Lattice System", ["FCC (Face-Centered Cubic)", "BCC (Body-Centered Cubic)", "Diamond Cubic"])
         selected_code = lattice_system.split(" ")[0]
         thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
-        
-        if "anim_frame" not in st.session_state:
-            st.session_state.anim_frame = 0
-
-        play_loop = st.toggle("▶ Enable Live Thermal Animation", value=False)
-        st.caption("Simulates real-time atomic thermal displacement across dynamic timeframes.")
+        st.caption("Use the ▶ Play button at the top-left of the 3D chart to run real-time thermal atomic vibrations.")
     
     with col_c2:
         base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
         
-        if play_loop:
-            st.session_state.anim_frame = (st.session_state.anim_frame + 1) % len(frames_data)
-            active_coords = frames_data[st.session_state.anim_frame]
-            time.sleep(0.12)
-            st.rerun()
-        else:
-            st.session_state.anim_frame = 0
-            active_coords = frames_data[0]
-        
         fig_crystal = go.Figure(
             data=[go.Scatter3d(
-                x=active_coords[:, 0], y=active_coords[:, 1], z=active_coords[:, 2],
+                x=base_coords[:, 0], y=base_coords[:, 1], z=base_coords[:, 2],
                 mode='markers+text',
-                marker=dict(size=12, color=active_coords[:, 2], colorscale='Viridis', opacity=0.9),
-                text=[f"Atom {i+1}" for i in range(len(active_coords))],
+                marker=dict(size=12, color=base_coords[:, 2], colorscale='Viridis', opacity=0.9),
+                text=[f"Atom {i+1}" for i in range(len(base_coords))],
                 textposition="top center"
             )],
             layout=go.Layout(
-                title=dict(text=f"3D Lattice Dynamics: {lattice_system} (Frame {st.session_state.anim_frame+1}/15)", font=dict(size=13)),
+                title=dict(text=f"3D Lattice Dynamics: {lattice_system}", font=dict(size=14)),
                 scene=dict(
                     xaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
                     yaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
                     zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5])
                 ),
                 plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc",
-                margin=dict(l=0, r=0, t=35, b=0), height=380
-            )
+                margin=dict(l=0, r=0, t=40, b=0), height=400,
+                updatemenus=[dict(
+                    type="buttons",
+                    showactive=False,
+                    x=0.0,
+                    y=1.15,
+                    xanchor="left",
+                    yanchor="top",
+                    buttons=[
+                        dict(label="▶ Play Vibration",
+                             method="animate",
+                             args=[None, {"frame": {"duration": 180, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}]),
+                        dict(label="❚❚ Pause",
+                             method="animate",
+                             args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}])
+                    ]
+                )]
+            ),
+            frames=[go.Frame(
+                data=[go.Scatter3d(
+                    x=frame[:, 0], y=frame[:, 1], z=frame[:, 2],
+                    mode='markers',
+                    marker=dict(size=12, color=frame[:, 2], colorscale='Viridis', opacity=0.9)
+                )],
+                name=str(k)
+            ) for k, frame in enumerate(frames_data)]
         )
         st.plotly_chart(fig_crystal, use_container_width=True)
 else:
