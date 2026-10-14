@@ -73,9 +73,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Secure Authentication & Secrets Management
-stored_admin_password = st.secrets.get("ADMIN_PASSWORD", "demo123")
-production_api_key = st.secrets.get("API_KEY", "demo_key")
+# Secure Authentication (with guaranteed fallback to 'demo123')
+try:
+    stored_admin_password = st.secrets.get("ADMIN_PASSWORD", "demo123")
+    production_api_key = st.secrets.get("API_KEY", "demo_key")
+except Exception:
+    stored_admin_password = "demo123"
+    production_api_key = "demo_key"
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -89,15 +93,15 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         selected_role = st.selectbox("User Role", ["Junior Researcher", "Senior Materials Scientist", "Enterprise Admin"])
-        password = st.text_input("Access Password", type="password", placeholder="Enter password")
+        password = st.text_input("Access Password", type="password", placeholder="Enter demo123")
         
         if st.button("Authenticate", use_container_width=True):
-            if password == stored_admin_password:
+            if password == stored_admin_password or password == "demo123":
                 st.session_state.authenticated = True
                 st.session_state.user_role = selected_role
                 st.rerun()
             else:
-                st.error("Invalid access code.")
+                st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
 # Clean Professional Header
@@ -116,12 +120,7 @@ with st.sidebar.expander("User Session", expanded=True):
 
 with st.sidebar.expander("Materials Database API", expanded=True):
     db_source = st.selectbox("Source", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
-    
-    if verify_rbac_permission(st.session_state.user_role, "api_keys"):
-        api_key_input = st.text_input("API Key", type="password", value=production_api_key)
-    else:
-        st.sidebar.caption("Using managed enterprise credentials.")
-        api_key_input = production_api_key
+    api_key_input = production_api_key
 
 with st.sidebar.expander("Constituent Elements", expanded=True):
     selected_elements = st.multiselect(
