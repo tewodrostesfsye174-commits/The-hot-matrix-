@@ -7,6 +7,7 @@ from math_engine import (
     generate_tensor_grid, 
     run_optimized_solver, 
     run_pareto_optimization, 
+    run_batch_simulation,
     verify_rbac_permission, 
     fetch_materials_api_data, 
     app_predict
@@ -96,7 +97,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # Header
-st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v5.1 RBAC Edition)")
+st.title("🧪 Inverse Tensor Reconstructive Engine (I-TRE v5.2 Batch Edition)")
 st.markdown(f"### Multiscale Informatics Hub | Active Role: <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
 st.markdown("---")
 
@@ -112,7 +113,6 @@ with st.sidebar.expander("👤 User Session & Role", expanded=True):
 with st.sidebar.expander("🌐 Materials REST API Connector", expanded=True):
     db_source = st.selectbox("Data Source API", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
     
-    # RBAC check for API Key input modification
     if verify_rbac_permission(st.session_state.user_role, "api_keys"):
         api_key_input = st.text_input("API Key (Production)", type="password", value="demo_key")
     else:
@@ -129,17 +129,16 @@ with st.sidebar.expander("⚛️ Periodic Table Elements", expanded=True):
 with st.sidebar.expander("⚙️ Solver Performance Settings", expanded=False):
     tensor_rank = st.slider("Tensor Resolution Rank", min_value=10, max_value=80, value=30, step=5)
     
-    # RBAC check for advanced solver tuning
     if verify_rbac_permission(st.session_state.user_role, "advanced_solvers"):
         inversion_tolerance = st.selectbox("Inversion Tolerance", [1e-3, 1e-4, 1e-5], index=1)
         optimizer_method = st.selectbox("SciPy Optimization Routine", ["Nelder-Mead", "BFGS", "Powell"])
     else:
-        st.sidebar.info("ℹ️ Standard Preset Active (Admin required for custom tolerances)")
+        st.sidebar.info("ℹ️ Standard Preset Active")
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
 
-# --- SECTION 2: CONTROL CENTER & MAIN SCREEN INPUT BOXES ---
-st.subheader("📐 Enterprise Control Center & Multi-Objective Solver")
+# --- SECTION 2: CONTROL CENTER & BATCH QUEUE ---
+st.subheader("📐 Enterprise Control Center & Batch Simulation Queue")
 
 col_ctrl, col_res = st.columns([1, 1])
 
@@ -150,9 +149,14 @@ with col_ctrl:
     curing_temp_input = st.number_input("Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=150.0, step=5.0)
     initial_alpha_guess = st.number_input("Initial Alpha Guess", value=1.0, step=0.1)
     initial_beta_guess = st.number_input("Initial Beta Guess", value=1.0, step=0.1)
-    prediction_query = st.text_input("Compound Signature Query:", "SiO2-RBAC-01")
     
-    run_solver_btn = st.button("Execute Enterprise RBAC Pipeline", use_container_width=True)
+    prediction_query = st.text_input("Single Compound Query:", "SiO2-RBAC-01")
+    
+    # Batch Queue Input
+    st.markdown("#### 📦 Automated Batch Queue")
+    batch_input_str = st.text_area("Compound Signatures (Comma separated):", "SiO2-Alpha, Al2O3-Beta, Fe2O3-Gamma, TiC-Delta, SiC-Omega")
+    
+    run_solver_btn = st.button("Execute Single & Batch Pipelines", use_container_width=True)
 
 # Fetch data and run solvers
 api_result = fetch_materials_api_data(api_key_input, prediction_query)
@@ -160,7 +164,7 @@ x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_facto
 weights, strengths, masses, efficiencies = run_pareto_optimization(tensor_rank, curing_temp_input)
 
 with col_res:
-    st.markdown("#### 📊 Solver Output & RBAC Metrics")
+    st.markdown("#### 📊 Solver Output & Batch Results")
     
     st.markdown(f"""
         <div class="api-card">
@@ -175,7 +179,7 @@ with col_res:
     
     st.markdown(f"""
         <div class="metric-card">
-            <h4>RBAC Clearance Status: Verified ✅</h4>
+            <h4>Optimization Status: Converged ✅</h4>
             <p><b>Max Efficiency Index:</b> {max(efficiencies):.4f} | <b>Residual Error:</b> {opt_residual:.6f}</p>
         </div>
     """, unsafe_allow_html=True)
@@ -186,27 +190,17 @@ with col_res:
     })
     st.dataframe(results_df, use_container_width=True)
     
-    # --- CSV & JSON EXPORT UTILITIES ---
-    st.markdown("#### 💾 Export Enterprise Package")
-    csv_data = results_df.to_csv(index=False).encode('utf-8')
-    json_data = json.dumps({
-        "architecture": "Phase 2 RBAC Multi-User Enterprise",
-        "user_role": st.session_state.user_role,
-        "api_connector_data": api_result,
-        "compound_signature": prediction_query,
-        "selected_elements": selected_elements,
-        "optimization_results": {
-            "alpha": opt_alpha,
-            "beta": opt_beta,
-            "residual_error": opt_residual
-        }
-    }, indent=4).encode('utf-8')
-
-    export_col1, export_col2 = st.columns(2)
-    with export_col1:
-        st.download_button("Download CSV Report", data=csv_data, file_name=f"{prediction_query}_rbac_report.csv", mime="text/csv", use_container_width=True)
-    with export_col2:
-        st.download_button("Download JSON Package", data=json_data, file_name=f"{prediction_query}_rbac_package.json", mime="application/json", use_container_width=True)
+    # --- AUTOMATED BATCH QUEUE EXECUTION ---
+    if verify_rbac_permission(st.session_state.user_role, "batch_queues"):
+        st.markdown("#### ⚡ Batch Simulation Queue Results")
+        queries_list = batch_input_str.split(",")
+        batch_df = run_batch_simulation(queries_list, curing_temp_input, tensor_scaling_factor)
+        st.dataframe(batch_df, use_container_width=True)
+        
+        batch_csv = batch_df.to_csv(index=False).encode('utf-8')
+        st.download_button("Download Batch CSV Report", data=batch_csv, file_name="tensor_lab_batch_report.csv", mime="text/csv", use_container_width=True)
+    else:
+        st.warning("🔒 Batch Queues restricted to Senior Scientists and Admins.")
 
 # --- SECTION 1: VISUALIZATIONS & PARETO FRONTIER ---
 st.markdown("---")
@@ -237,24 +231,6 @@ with col_v3:
     fig_pareto.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=20, b=10), height=300)
     st.plotly_chart(fig_pareto, use_container_width=True)
 
-# --- SECTION 3: PREDICTION OUTCOMES LINKED TO ELEMENTS ---
-st.markdown("---")
-st.subheader("🔬 RBAC-Validated DFT Mapped Elements")
-
-if prediction_query:
-    predicted_elements = app_predict(prediction_query, selected_elements, curing_temp_input)
-    st.markdown(f"**Calculated Elements for Query:** `{prediction_query}` (Authorized for `{st.session_state.user_role}`)")
-    
-    cols = st.columns(len(predicted_elements))
-    for idx, element in enumerate(predicted_elements):
-        with cols[idx]:
-            st.markdown(f"""
-                <div style="background-color: #161b22; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center; min-height: 90px;">
-                    <p style="color: #8b949e; font-size: 11px; margin-bottom: 3px;">Node {idx+1}</p>
-                    <p style="color: #58a6ff; font-weight: bold; font-size: 13px; margin: 0;">{element}</p>
-                </div>
-            """, unsafe_allow_html=True)
-
 # Footer
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v5.1 Phase 2 | Role-Based Access Control Enterprise Edition</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8b949e;'>TensorLab Engine v5.2 Phase 2 | Automated Batch Simulation Queue Edition</p>", unsafe_allow_html=True)
