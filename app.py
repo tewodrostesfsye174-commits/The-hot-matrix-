@@ -8,6 +8,7 @@ from math_engine import (
     run_optimized_solver, 
     run_pareto_optimization, 
     run_batch_simulation,
+    generate_crystal_lattice_animation,
     generate_executive_report_html,
     verify_rbac_permission, 
     fetch_materials_api_data, 
@@ -240,6 +241,59 @@ with col_v3:
                             color_continuous_scale="Turbo")
     fig_pareto.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=10, b=10), height=280)
     st.plotly_chart(fig_pareto, use_container_width=True)
+
+# --- NEW SECTION: CRYSTALLINE STRUCTURE & THERMAL VIBRATION ANIMATION ---
+st.markdown("---")
+st.markdown("#### Crystalline Structure & Thermal Lattice Dynamics")
+
+if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
+    col_c1, col_c2 = st.columns([1, 3])
+    with col_c1:
+        lattice_system = st.selectbox("Lattice System", ["FCC (Face-Centered Cubic)", "BCC (Body-Centered Cubic)", "Diamond Cubic"])
+        selected_code = lattice_system.split(" ")[0]
+        thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
+        st.caption("Simulates atomic positions and thermal displacement across dynamic timeframes.")
+    
+    with col_c2:
+        base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
+        
+        # Build Animated Plotly Figure
+        fig_crystal = go.Figure(
+            data=[go.Scatter3d(
+                x=base_coords[:, 0], y=base_coords[:, 1], z=base_coords[:, 2],
+                mode='markers+text',
+                marker=dict(size=12, color=base_coords[:, 2], colorscale='Viridis', opacity=0.9),
+                text=[f"Atom {i+1}" for i in range(len(base_coords))],
+                textposition="top center"
+            )],
+            layout=go.Layout(
+                title=f"3D Lattice Dynamics: {lattice_system}",
+                scene=dict(
+                    xaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d", range=[-0.5, 1.5]),
+                    yaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d", range=[-0.5, 1.5]),
+                    zaxis=dict(backgroundcolor="#161b22", gridcolor="#30363d", range=[-0.5, 1.5])
+                ),
+                plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff",
+                margin=dict(l=0, r=0, t=30, b=0), height=380,
+                updatemenus=[dict(
+                    type="buttons",
+                    buttons=[dict(label="▶ Play Thermal Vibration",
+                                 method="animate",
+                                 args=[None, {"frame": {"duration": 150, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}])]
+                )]
+            ),
+            frames=[go.Framer(
+                data=[go.Scatter3d(
+                    x=frame[:, 0], y=frame[:, 1], z=frame[:, 2],
+                    mode='markers',
+                    marker=dict(size=12, color=frame[:, 2], colorscale='Viridis', opacity=0.9)
+                )],
+                name=str(k)
+            ) for k, frame in enumerate(frames_data)]
+        )
+        st.plotly_chart(fig_crystal, use_container_width=True)
+else:
+    st.info("Crystalline lattice animation restricted for current clearance level.")
 
 # --- SECTION 3: PREDICTION OUTCOMES LINKED TO ELEMENTS ---
 st.markdown("---")
