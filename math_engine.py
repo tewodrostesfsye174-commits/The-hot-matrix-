@@ -47,6 +47,38 @@ def run_batch_simulation(queries, temp=150.0, scale=1.0):
         })
     return pd.DataFrame(data)
 
+def generate_crystal_lattice_animation(lattice_type="FCC", thermal_factor=1.0):
+    """Generates 3D atomic coordinates for crystal lattice animation frames."""
+    if lattice_type == "FCC":
+        base_coords = np.array([
+            [0, 0, 0], [1, 1, 0], [1, 0, 1], [0, 1, 1], # Faces & corners
+            [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
+            [1, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 1], [1, 1, 1]
+        ])
+    elif lattice_type == "BCC":
+        base_coords = np.array([
+            [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
+            [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1],
+            [0.5, 0.5, 0.5] # Center atom
+        ])
+    else: # Diamond Cubic
+        base_coords = np.array([
+            [0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
+            [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75],
+            [1, 1, 1], [0.5, 0.5, 1], [0.5, 1, 0.5], [1, 0.5, 0.5]
+        ])
+    
+    # Add thermal vibration displacement across frames
+    frames_data = []
+    np.random.seed(42)
+    for t in range(15):
+        phase = t * (2 * np.pi / 15.0)
+        vibration = np.sin(phase) * 0.05 * thermal_factor * np.random.normal(0, 1, base_coords.shape)
+        frame_coords = base_coords + vibration
+        frames_data.append(frame_coords)
+    
+    return base_coords, frames_data
+
 def generate_executive_report_html(role, query, temp, scale, alpha, beta, residual, batch_df):
     html_content = f"""
     <!DOCTYPE html>
@@ -88,9 +120,9 @@ def generate_executive_report_html(role, query, temp, scale, alpha, beta, residu
 
 def verify_rbac_permission(role, feature):
     permissions = {
-        "Junior Researcher": ["advanced_solvers"],
-        "Senior Materials Scientist": ["advanced_solvers", "batch_queues"],
-        "Enterprise Admin": ["advanced_solvers", "batch_queues", "reports"]
+        "Junior Researcher": ["advanced_solvers", "crystal_animation"],
+        "Senior Materials Scientist": ["advanced_solvers", "batch_queues", "crystal_animation"],
+        "Enterprise Admin": ["advanced_solvers", "batch_queues", "reports", "crystal_animation"]
     }
     return feature in permissions.get(role, [])
 
@@ -102,7 +134,6 @@ def fetch_materials_api_data(api_key, query):
             "query": query
         }
     try:
-        headers = {"X-API-KEY": api_key}
         return {
             "status": "Connected to External Enterprise API",
             "source": "Materials Project Gateway",
