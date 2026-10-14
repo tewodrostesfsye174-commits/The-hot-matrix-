@@ -242,7 +242,7 @@ with col_v3:
     fig_pareto.update_layout(plot_bgcolor="#0e1117", paper_bgcolor="#0e1117", font_color="#ffffff", margin=dict(l=10, r=10, t=10, b=10), height=280)
     st.plotly_chart(fig_pareto, use_container_width=True)
 
-# --- NEW SECTION: CRYSTALLINE STRUCTURE & THERMAL VIBRATION ANIMATION ---
+# --- SECTION: CRYSTALLINE STRUCTURE & THERMAL VIBRATION ANIMATION ---
 st.markdown("---")
 st.markdown("#### Crystalline Structure & Thermal Lattice Dynamics")
 
@@ -257,7 +257,6 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
     with col_c2:
         base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
         
-        # Build Animated Plotly Figure
         fig_crystal = go.Figure(
             data=[go.Scatter3d(
                 x=base_coords[:, 0], y=base_coords[:, 1], z=base_coords[:, 2],
@@ -282,7 +281,7 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
                                  args=[None, {"frame": {"duration": 150, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}])]
                 )]
             ),
-            frames=[go.Framer(
+            frames=[go.Frame(
                 data=[go.Scatter3d(
                     x=frame[:, 0], y=frame[:, 1], z=frame[:, 2],
                     mode='markers',
