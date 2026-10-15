@@ -1,4 +1,4 @@
-import streamlit as st
+heremimport streamlit as st
 import pandas as pd
 import json
 import plotly.express as px
@@ -157,7 +157,7 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
 
-# --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK (DRIVES THE MATH) ---
+# --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
 st.markdown("<p style='color: #8b949e; font-size: 13px;'>Mixing reagents in the flask automatically feeds and updates the core mathematical simulation engine.</p>", unsafe_allow_html=True)
 
@@ -193,13 +193,12 @@ with col_flask:
 
 st.markdown("---")
 
-# --- SECTION 2: CONTROL PANEL & BATCH QUEUE (DRIVEN BY FLASK OUTPUTS) ---
+# --- SECTION 2: CONTROL PANEL & BATCH QUEUE ---
 st.markdown("#### Simulation Control Panel (Math Engine)")
 
 col_ctrl, col_res = st.columns([1, 1])
 
 with col_ctrl:
-    # Automatically bound to Virtual Flask results or manual overrides
     default_scale = res.get('derived_scale', 1.0)
     default_temp = res.get('derived_temp', 180.0)
     default_query = res.get('query_sig', 'SiO2-RBAC-01')
@@ -216,7 +215,6 @@ with col_ctrl:
     
     run_solver_btn = st.button("Execute Simulation Pipeline", use_container_width=True)
 
-# Fetch data and run solvers using the bound variables
 api_result = fetch_materials_api_data(api_key_input, prediction_query)
 x_vals, y_vals, X, Y, Z = generate_tensor_grid(tensor_rank, tensor_scaling_factor, curing_temp_input)
 weights, strengths, masses, efficiencies = run_pareto_optimization(tensor_rank, curing_temp_input)
@@ -310,7 +308,7 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
         lattice_system = st.selectbox("Lattice System", ["FCC (Face-Centered Cubic)", "BCC (Body-Centered Cubic)", "Diamond Cubic"])
         selected_code = lattice_system.split(" ")[0]
         thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
-        st.caption("Use the ▶ Play button at the top-left of the 3D chart to run real-time thermal atomic vibrations.")
+        st.caption("Use the media player bar below the chart to play, pause, and scrub through thermal vibration frames.")
     
     with col_c2:
         base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
@@ -331,22 +329,36 @@ if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
                     zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5])
                 ),
                 plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc",
-                margin=dict(l=0, r=0, t=40, b=0), height=400,
+                margin=dict(l=0, r=0, t=40, b=60), height=440,
                 updatemenus=[dict(
                     type="buttons",
                     showactive=False,
-                    x=0.0,
-                    y=1.15,
-                    xanchor="left",
+                    x=0.5,
+                    y=-0.18,
+                    xanchor="center",
                     yanchor="top",
+                    direction="left",
                     buttons=[
-                        dict(label="▶ Play Vibration",
+                        dict(label="▶ Play",
                              method="animate",
                              args=[None, {"frame": {"duration": 180, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}]),
                         dict(label="❚❚ Pause",
                              method="animate",
                              args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}])
                     ]
+                )],
+                sliders=[dict(
+                    active=0,
+                    yanchor="top",
+                    xanchor="left",
+                    currentvalue={"prefix": "Frame: ", "font": {"color": "#58a6ff"}},
+                    pad={"t": 35, "b": 10},
+                    len=0.9,
+                    x=0.05,
+                    y=-0.1,
+                    steps=[dict(args=[[str(k)], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}],
+                                label=str(k+1),
+                                method="animate") for k in range(len(frames_data))]
                 )]
             ),
             frames=[go.Frame(
