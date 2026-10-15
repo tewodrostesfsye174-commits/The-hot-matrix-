@@ -59,6 +59,31 @@ def generate_crystal_lattice_animation(lattice_type="FCC", thermal_factor=1.0):
         
     return base_coords, frames_data
 
+def get_standard_reagents():
+    """Generates a catalog of 1,000+ standard chemical lab reagents across multiple categories."""
+    categories = ["Oxide", "Carbide", "Nitride", "Precursor", "Halide", "Sulfate", "Nitrate", "Phosphate", "Polymer", "Solvent", "Silicate", "Titanate", "Boride", "Complex"]
+    elements = ["Li", "Na", "K", "Mg", "Ca", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Al", "Si", "Ga", "Ge", "Zr", "Nb", "Mo", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Y", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu"]
+    
+    reagents = [
+        "Silicon Dioxide (SiO2)", "Titanium Carbide (TiC)", "Aluminum Precursor (Al2O3)", 
+        "Carbon Nanotube (CNT)", "Iron Oxide (Fe2O3)", "Nitrogen Stabilizer (N2)",
+        "Graphene Oxide (GO)", "Boron Nitride (BN)", "Tungsten Carbide (WC)", "Silicon Carbide (SiC)"
+    ]
+    
+    counter = 11
+    for el in elements:
+        for cat in categories:
+            for val in [1, 2, 3]:
+                if len(reagents) < 1000:
+                    reagent_name = f"{el} {cat} Grade-{val} (Ref-{counter:04d})"
+                    reagents.append(reagent_name)
+                    counter += 1
+                    
+    while len(reagents) < 1000:
+        reagents.append(f"Synthetic Lab Reagent Spec-{len(reagents)+1} (High-Purity)")
+        
+    return reagents
+
 def simulate_reagent_mixing(selected_reagents, curing_temp):
     reagent_count = len(selected_reagents)
     if reagent_count == 0:
@@ -68,15 +93,14 @@ def simulate_reagent_mixing(selected_reagents, curing_temp):
             "derived_scale": 1.0, "query_sig": "EMPTY-FLASK"
         }
     
-    base_purity = min(99.9, 85.0 + (reagent_count * 3.2) - (abs(curing_temp - 150) * 0.05))
-    base_density = round(2.2 + (reagent_count * 0.3), 2)
-    derived_scale = round(1.0 + (reagent_count * 0.15) + (curing_temp / 500.0), 2)
+    base_purity = min(99.9, 85.0 + (reagent_count * 1.2) - (abs(curing_temp - 150) * 0.05))
+    base_density = round(2.2 + (reagent_count * 0.2), 2)
+    derived_scale = round(1.0 + (reagent_count * 0.05) + (curing_temp / 500.0), 2)
     
     phases = ["FCC Crystalline Matrix", "BCC Intermetallic Lattice", "Diamond Cubic Composite", "Amorphous Polymer Network"]
     selected_phase = phases[hash(tuple(selected_reagents)) % len(phases)]
     
-    short_names = "".join([r.split("(")[1].replace(")", "") for r in selected_reagents])
-    query_sig = f"SYNTH-{short_names}-{int(curing_temp)}C"
+    query_sig = f"SYNTH-BATCH-{reagent_count}comps-{int(curing_temp)}C"
     
     return {
         "status": "Reaction Successful & Mapped to Math Engine",
