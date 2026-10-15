@@ -13,7 +13,8 @@ from math_engine import (
     verify_rbac_permission, 
     fetch_materials_api_data, 
     app_predict,
-    simulate_reagent_mixing
+    simulate_reagent_mixing,
+    get_standard_reagents
 )
 
 # Page Configuration
@@ -157,19 +158,15 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
 
-# --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
+# --- VIRTUAL REAGENT SHELF (1000+ STANDARD REAGENTS) & SYNTHESIS FLASK ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
-st.markdown("<p style='color: #8b949e; font-size: 13px;'>Mixing reagents in the flask automatically feeds and updates the core mathematical simulation engine.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Select from over 1,000 standard chemical lab reagents on the shelf to drive the mathematical simulation engine.</p>", unsafe_allow_html=True)
 
 col_shelf, col_flask = st.columns([1, 1])
 
 with col_shelf:
-    st.markdown("##### 🗄️ Reagent Shelf")
-    available_shelf = [
-        "Silicon Dioxide (SiO2)", "Titanium Carbide (TiC)", 
-        "Aluminum Precursor (Al2O3)", "Carbon Nanotube (CNT)", 
-        "Iron Oxide (Fe2O3)", "Nitrogen Stabilizer (N2)"
-    ]
+    st.markdown("##### 🗄️ Reagent Shelf (1,000+ Standard Chemicals)")
+    available_shelf = get_standard_reagents()
     chosen_reagents = st.multiselect("Select Reagents for Synthesis", available_shelf, default=["Silicon Dioxide (SiO2)", "Carbon Nanotube (CNT)"])
     synthesis_temp_input = st.slider("Flask Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=180.0, step=5.0)
 
