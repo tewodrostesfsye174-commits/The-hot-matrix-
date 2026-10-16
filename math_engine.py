@@ -60,7 +60,7 @@ def generate_crystal_lattice_animation(lattice_type="FCC", thermal_factor=1.0):
     return base_coords, frames_data
 
 def get_standard_reagents():
-    """Generates a catalog of 1,000+ standard chemical lab reagents across multiple categories."""
+    """Generates a comprehensive catalog of 1,000+ standard chemical lab reagents."""
     categories = ["Oxide", "Carbide", "Nitride", "Precursor", "Halide", "Sulfate", "Nitrate", "Phosphate", "Polymer", "Solvent", "Silicate", "Titanate", "Boride", "Complex"]
     elements = ["Li", "Na", "K", "Mg", "Ca", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Al", "Si", "Ga", "Ge", "Zr", "Nb", "Mo", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Y", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu"]
     
@@ -75,8 +75,7 @@ def get_standard_reagents():
         for cat in categories:
             for val in [1, 2, 3]:
                 if len(reagents) < 1000:
-                    reagent_name = f"{el} {cat} Grade-{val} (Ref-{counter:04d})"
-                    reagents.append(reagent_name)
+                    reagents.append(f"{el} {cat} Grade-{val} (Ref-{counter:04d})")
                     counter += 1
                     
     while len(reagents) < 1000:
@@ -122,7 +121,7 @@ def verify_rbac_permission(role, feature):
     return feature in permissions.get(role, [])
 
 def fetch_materials_api_data(api_key, query):
-    return {"status": "Connected to External Enterprise API", "source": "Materials Project Gateway"}
+    return {"status": "Connected to External Research API", "source": "Materials Project Gateway"}
 
 def app_predict(query, elements, temp):
     return [
@@ -135,9 +134,9 @@ def app_predict(query, elements, temp):
 def generate_executive_report_html(role, query, temp, scale, alpha, beta, residual, batch_df):
     return f"""
     <html>
-    <head><title>Executive Report - {query}</title></head>
+    <head><title>Research Report - {query}</title></head>
     <body style="font-family: sans-serif; background: #0b0f19; color: #f0f6fc; padding: 20px;">
-        <h2>TensorLab Executive Report</h2>
+        <h2>TensorLab Materials Research Report</h2>
         <p><b>Query Signature:</b> {query}</p>
         <p><b>User Clearance Role:</b> {role}</p>
         <p><b>Curing Temperature:</b> {temp}°C | <b>Scale Factor:</b> {scale}</p>
