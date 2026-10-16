@@ -8,6 +8,7 @@ from math_engine import (
     run_optimized_solver, 
     run_pareto_optimization, 
     run_batch_simulation,
+    run_inverse_design_screening,
     generate_crystal_lattice_animation,
     generate_executive_report_html,
     verify_rbac_permission, 
@@ -25,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Refined High-Contrast Dark Mode Styling (Deep Navy-Slate Palette)
+# Refined High-Contrast Dark Mode Styling
 st.markdown("""
     <style>
     .stApp {
@@ -92,7 +93,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Secure Authentication (with guaranteed fallback to 'demo123')
+# Secure Authentication
 try:
     stored_admin_password = st.secrets.get("ADMIN_PASSWORD", "demo123")
     production_api_key = st.secrets.get("API_KEY", "demo_key")
@@ -123,26 +124,19 @@ if not st.session_state.authenticated:
                 st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
-# --- MASTER BRAND TITLE BAR WITH FILE & SETTINGS ACTIONS ---
-st.markdown("""
-    <style>
-    .brand-container {
-        background: linear-gradient(135deg, #111625 0%, #1f6feb 100%);
-        padding: 14px 20px;
-        border-radius: 10px;
-        border: 1px solid #30363d;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
+# --- MASTER BRAND TITLE BAR WITH FINAL LOGO & ACTIONS ---
 brand_col1, brand_col2, brand_col3, brand_col4 = st.columns([3, 1, 1, 1])
 
 with brand_col1:
     st.markdown("""
         <div style="display: flex; align-items: center; gap: 12px; padding-top: 4px;">
-            <span style="font-size: 26px;">⚛️</span>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f0f6fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 3 6.5 12 11 21 6.5 12 2"></polygon>
+              <line x1="12" y1="11" x2="12" y2="13.5"></line>
+              <line x1="4" y1="15.5" x2="20" y2="15.5"></line>
+              <line x1="4" y1="19.5" x2="15" y2="19.5"></line>
+              <circle cx="18.5" cy="19.5" r="1.5" fill="#1f6feb" stroke="#1f6feb"></circle>
+            </svg>
             <div>
                 <h1 style="margin: 0; color: #58a6ff !important; font-size: 20px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
                 <span style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;">Materials Informatics Sandbox</span>
@@ -151,7 +145,7 @@ with brand_col1:
     """, unsafe_allow_html=True)
 
 with brand_col2:
-    if st.button("💾 Save", use_container_width=True, help="Save current simulation state"):
+    if st.button("💾 Save", use_container_width=True, help="Save simulation state"):
         st.toast("Workspace state saved successfully!", icon="💾")
 
 with brand_col3:
@@ -165,7 +159,7 @@ with brand_col4:
 st.markdown(f"<span style='color: #8b949e; font-size: 13px;'>Session Active &bull; Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
 st.markdown("<hr style='margin: 15px 0; border-color: #30363d;'>", unsafe_allow_html=True)
 
-# --- SIDEBAR: CONFIGURATION ---
+# --- SIDEBAR: CONFIGURATION & SETTINGS ---
 st.sidebar.header("Configuration")
 
 with st.sidebar.expander("User Session", expanded=True):
@@ -174,11 +168,16 @@ with st.sidebar.expander("User Session", expanded=True):
         st.session_state.authenticated = False
         st.rerun()
 
-with st.sidebar.expander("Materials Database API", expanded=True):
+with st.sidebar.expander("Workspace Layout Settings", expanded=False):
+    show_lattice_anim = st.checkbox("Show 3D Lattice Animation", value=True)
+    show_pareto = st.checkbox("Show Pareto Frontier", value=True)
+    show_batch = st.checkbox("Show Batch Simulation Queue", value=True)
+
+with st.sidebar.expander("Materials Database API", expanded=False):
     db_source = st.selectbox("Source", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
     api_key_input = production_api_key
 
-with st.sidebar.expander("Constituent Elements", expanded=True):
+with st.sidebar.expander("Constituent Elements", expanded=False):
     selected_elements = st.multiselect(
         "Elements",
         ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
@@ -195,7 +194,7 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
 
-# --- VIRTUAL REAGENT SHELF (1000+ STANDARD REAGENTS) & SYNTHESIS FLASK ---
+# --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
 st.markdown("<p style='color: #8b949e; font-size: 13px;'>Select from over 1,000 standard chemical lab reagents on the shelf to drive the mathematical simulation engine.</p>", unsafe_allow_html=True)
 
@@ -227,7 +226,7 @@ with col_flask:
 
 st.markdown("---")
 
-# --- SECTION 2: CONTROL PANEL & BATCH QUEUE ---
+# --- SIMULATION CONTROL PANEL & BATCH QUEUE ---
 st.markdown("#### Simulation Control Panel (Math Engine)")
 
 col_ctrl, col_res = st.columns([1, 1])
@@ -244,8 +243,9 @@ with col_ctrl:
     
     prediction_query = st.text_input("Primary Compound Query", value=default_query)
     
-    st.markdown("##### Batch Simulation Queue")
-    batch_input_str = st.text_area("Compound Signatures (Comma separated)", f"{default_query}, Al2O3-Beta, Fe2O3-Gamma, TiC-Delta")
+    if show_batch:
+        st.markdown("##### Batch Simulation Queue")
+        batch_input_str = st.text_area("Compound Signatures (Comma separated)", f"{default_query}, Al2O3-Beta, Fe2O3-Gamma, TiC-Delta")
     
     run_solver_btn = st.button("Execute Simulation Pipeline", use_container_width=True)
 
@@ -280,7 +280,7 @@ with col_res:
     })
     st.dataframe(results_df, use_container_width=True)
     
-    if verify_rbac_permission(st.session_state.user_role, "batch_queues"):
+    if show_batch and verify_rbac_permission(st.session_state.user_role, "batch_queues"):
         st.markdown("##### Batch Queue Results")
         queries_list = batch_input_str.split(",")
         batch_df = run_batch_simulation(queries_list, curing_temp_input, tensor_scaling_factor)
@@ -299,13 +299,31 @@ with col_res:
                 mime="text/html", 
                 use_container_width=True
             )
-    else:
-        st.caption("Batch queues and automated reporting restricted.")
 
-# --- SECTION 1: VISUALIZATIONS & PARETO FRONTIER ---
+# --- INVERSE DESIGN & HIGH-THROUGHPUT SCREENING MODULE ---
+st.markdown("---")
+st.markdown("#### Inverse Design & Reagent Screening")
+
+if verify_rbac_permission(st.session_state.user_role, "inverse_design"):
+    inv_col1, inv_col2 = st.columns([1, 2])
+    with inv_col1:
+        target_str_input = st.number_input("Target Strength (MPa)", min_value=50.0, max_value=350.0, value=200.0, step=10.0)
+        target_den_input = st.number_input("Target Density (g/cm³)", min_value=1.0, max_value=5.0, value=2.5, step=0.1)
+        run_screening_btn = st.button("Screen 1,000+ Reagents", use_container_width=True)
+    
+    with inv_col2:
+        if run_screening_btn:
+            screening_df = run_inverse_design_screening(target_str_input, target_den_input, available_shelf)
+            st.dataframe(screening_df, use_container_width=True)
+        else:
+            st.info("Configure your target material specifications on the left and click screen to search the 1,000+ reagent catalog.")
+else:
+    st.info("Inverse design & high-throughput screening restricted for current clearance level.")
+
+# --- VISUALIZATIONS & PARETO FRONTIER ---
 st.markdown("---")
 st.markdown("#### Spatial & Multi-Objective Visualizations")
-col_v1, col_v2, col_v3 = st.columns(3)
+col_v1, col_v2, col_v3 = st.columns(3 if show_pareto else 2)
 
 with col_v1:
     st.caption("2D Spatial Stress")
@@ -324,91 +342,93 @@ with col_v2:
     )
     st.plotly_chart(fig_3d, use_container_width=True)
 
-with col_v3:
-    st.caption("Pareto Frontier Trade-Offs")
-    fig_pareto = px.scatter(x=masses, y=strengths, color=efficiencies,
-                            labels=dict(x="Mass / Cost", y="Strength (MPa)", color="Efficiency"),
-                            color_continuous_scale="Turbo")
-    fig_pareto.update_layout(plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc", margin=dict(l=10, r=10, t=10, b=10), height=280)
-    st.plotly_chart(fig_pareto, use_container_width=True)
+if show_pareto:
+    with col_v3:
+        st.caption("Pareto Frontier Trade-Offs")
+        fig_pareto = px.scatter(x=masses, y=strengths, color=efficiencies,
+                                labels=dict(x="Mass / Cost", y="Strength (MPa)", color="Efficiency"),
+                                color_continuous_scale="Turbo")
+        fig_pareto.update_layout(plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc", margin=dict(l=10, r=10, t=10, b=10), height=280)
+        st.plotly_chart(fig_pareto, use_container_width=True)
 
-# --- SECTION: CRYSTALLINE STRUCTURE & THERMAL VIBRATION ANIMATION ---
-st.markdown("---")
-st.markdown("#### Crystalline Structure & Thermal Lattice Dynamics")
+# --- CRYSTALLINE STRUCTURE & THERMAL VIBRATION ANIMATION ---
+if show_lattice_anim:
+    st.markdown("---")
+    st.markdown("#### Crystalline Structure & Thermal Lattice Dynamics")
 
-if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
-    col_c1, col_c2 = st.columns([1, 3])
-    with col_c1:
-        lattice_system = st.selectbox("Lattice System", ["FCC (Face-Centered Cubic)", "BCC (Body-Centered Cubic)", "Diamond Cubic"])
-        selected_code = lattice_system.split(" ")[0]
-        thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
-        st.caption("Use the media player bar below the chart to play, pause, and scrub through thermal vibration frames.")
-    
-    with col_c2:
-        base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
+    if verify_rbac_permission(st.session_state.user_role, "crystal_animation"):
+        col_c1, col_c2 = st.columns([1, 3])
+        with col_c1:
+            lattice_system = st.selectbox("Lattice System", ["FCC (Face-Centered Cubic)", "BCC (Body-Centered Cubic)", "Diamond Cubic"])
+            selected_code = lattice_system.split(" ")[0]
+            thermal_slider = st.slider("Thermal Energy / Vibration", min_value=0.2, max_value=3.0, value=1.0, step=0.2)
+            st.caption("Use the media player bar below the chart to play, pause, and scrub through thermal vibration frames.")
         
-        fig_crystal = go.Figure(
-            data=[go.Scatter3d(
-                x=base_coords[:, 0], y=base_coords[:, 1], z=base_coords[:, 2],
-                mode='markers+text',
-                marker=dict(size=12, color=base_coords[:, 2], colorscale='Viridis', opacity=0.9),
-                text=[f"Atom {i+1}" for i in range(len(base_coords))],
-                textposition="top center"
-            )],
-            layout=go.Layout(
-                title=dict(text=f"3D Lattice Dynamics: {lattice_system}", font=dict(size=14)),
-                scene=dict(
-                    xaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
-                    yaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
-                    zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5])
-                ),
-                plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc",
-                margin=dict(l=0, r=0, t=40, b=60), height=440,
-                updatemenus=[dict(
-                    type="buttons",
-                    showactive=False,
-                    x=0.5,
-                    y=-0.18,
-                    xanchor="center",
-                    yanchor="top",
-                    direction="left",
-                    buttons=[
-                        dict(label="▶ Play",
-                             method="animate",
-                             args=[None, {"frame": {"duration": 180, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}]),
-                        dict(label="❚❚ Pause",
-                             method="animate",
-                             args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}])
-                    ]
-                )],
-                sliders=[dict(
-                    active=0,
-                    yanchor="top",
-                    xanchor="left",
-                    currentvalue={"prefix": "Frame: ", "font": {"color": "#58a6ff"}},
-                    pad={"t": 35, "b": 10},
-                    len=0.9,
-                    x=0.05,
-                    y=-0.1,
-                    steps=[dict(args=[[str(k)], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}],
-                                label=str(k+1),
-                                method="animate") for k in range(len(frames_data))]
-                )]
-            ),
-            frames=[go.Frame(
+        with col_c2:
+            base_coords, frames_data = generate_crystal_lattice_animation(lattice_type=selected_code, thermal_factor=thermal_slider)
+            
+            fig_crystal = go.Figure(
                 data=[go.Scatter3d(
-                    x=frame[:, 0], y=frame[:, 1], z=frame[:, 2],
-                    mode='markers',
-                    marker=dict(size=12, color=frame[:, 2], colorscale='Viridis', opacity=0.9)
+                    x=base_coords[:, 0], y=base_coords[:, 1], z=base_coords[:, 2],
+                    mode='markers+text',
+                    marker=dict(size=12, color=base_coords[:, 2], colorscale='Viridis', opacity=0.9),
+                    text=[f"Atom {i+1}" for i in range(len(base_coords))],
+                    textposition="top center"
                 )],
-                name=str(k)
-            ) for k, frame in enumerate(frames_data)]
-        )
-        st.plotly_chart(fig_crystal, use_container_width=True)
-else:
-    st.info("Crystalline lattice animation restricted for current clearance level.")
+                layout=go.Layout(
+                    title=dict(text=f"3D Lattice Dynamics: {lattice_system}", font=dict(size=14)),
+                    scene=dict(
+                        xaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
+                        yaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5]),
+                        zaxis=dict(backgroundcolor="#111625", gridcolor="#30363d", range=[-0.5, 1.5])
+                    ),
+                    plot_bgcolor="#0b0f19", paper_bgcolor="#0b0f19", font_color="#f0f6fc",
+                    margin=dict(l=0, r=0, t=40, b=60), height=440,
+                    updatemenus=[dict(
+                        type="buttons",
+                        showactive=False,
+                        x=0.5,
+                        y=-0.18,
+                        xanchor="center",
+                        yanchor="top",
+                        direction="left",
+                        buttons=[
+                            dict(label="▶ Play",
+                                 method="animate",
+                                 args=[None, {"frame": {"duration": 180, "redraw": True}, "fromcurrent": True, "transition": {"duration": 50}}]),
+                            dict(label="❚❚ Pause",
+                                 method="animate",
+                                 args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}])
+                        ]
+                    )],
+                    sliders=[dict(
+                        active=0,
+                        yanchor="top",
+                        xanchor="left",
+                        currentvalue={"prefix": "Frame: ", "font": {"color": "#58a6ff"}},
+                        pad={"t": 35, "b": 10},
+                        len=0.9,
+                        x=0.05,
+                        y=-0.1,
+                        steps=[dict(args=[[str(k)], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}],
+                                    label=str(k+1),
+                                    method="animate") for k in range(len(frames_data))]
+                    )]
+                ),
+                frames=[go.Frame(
+                    data=[go.Scatter3d(
+                        x=frame[:, 0], y=frame[:, 1], z=frame[:, 2],
+                        mode='markers',
+                        marker=dict(size=12, color=frame[:, 2], colorscale='Viridis', opacity=0.9)
+                    )],
+                    name=str(k)
+                ) for k, frame in enumerate(frames_data)]
+            )
+            st.plotly_chart(fig_crystal, use_container_width=True)
+    else:
+        st.info("Crystalline lattice animation restricted for current clearance level.")
 
-# --- SECTION 3: PREDICTION OUTCOMES LINKED TO ELEMENTS ---
+# --- DFT MAPPED ELEMENT NODES ---
 st.markdown("---")
 st.markdown("#### DFT Mapped Element Nodes")
 
