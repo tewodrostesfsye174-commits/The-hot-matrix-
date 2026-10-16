@@ -90,6 +90,19 @@ st.markdown("""
         background-color: #161b22 !important;
         color: #f0f6fc !important;
     }
+    .brand-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 5px 0;
+    }
+    .brand-title-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -124,42 +137,7 @@ if not st.session_state.authenticated:
                 st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
-# --- MASTER BRAND TITLE BAR WITH FINAL LOGO & ACTIONS ---
-brand_col1, brand_col2, brand_col3, brand_col4 = st.columns([3, 1, 1, 1])
-
-with brand_col1:
-    st.markdown("""
-        <div style="display: flex; align-items: center; gap: 12px; padding-top: 4px;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f0f6fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 3 6.5 12 11 21 6.5 12 2"></polygon>
-              <line x1="12" y1="11" x2="12" y2="13.5"></line>
-              <line x1="4" y1="15.5" x2="20" y2="15.5"></line>
-              <line x1="4" y1="19.5" x2="15" y2="19.5"></line>
-              <circle cx="18.5" cy="19.5" r="1.5" fill="#1f6feb" stroke="#1f6feb"></circle>
-            </svg>
-            <div>
-                <h1 style="margin: 0; color: #58a6ff !important; font-size: 20px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
-                <span style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;">Materials Informatics Sandbox</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with brand_col2:
-    if st.button("💾 Save", use_container_width=True, help="Save simulation state"):
-        st.toast("Workspace state saved successfully!", icon="💾")
-
-with brand_col3:
-    if st.button("📂 Export", use_container_width=True, help="Export session data"):
-        st.toast("Preparing session export package...", icon="📦")
-
-with brand_col4:
-    if st.button("⚙️ Config", use_container_width=True, help="Quick settings"):
-        st.toast("Opening configuration panel...", icon="⚙️")
-
-st.markdown(f"<span style='color: #8b949e; font-size: 13px;'>Session Active &bull; Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
-st.markdown("<hr style='margin: 15px 0; border-color: #30363d;'>", unsafe_allow_html=True)
-
-# --- SIDEBAR: CONFIGURATION & SETTINGS ---
+# --- SIDEBAR: CONFIGURATION & SETTINGS (RENDERED FIRST) ---
 st.sidebar.header("Configuration")
 
 with st.sidebar.expander("User Session", expanded=True):
@@ -168,7 +146,7 @@ with st.sidebar.expander("User Session", expanded=True):
         st.session_state.authenticated = False
         st.rerun()
 
-with st.sidebar.expander("Workspace Layout Settings", expanded=False):
+with st.sidebar.expander("Workspace Layout Settings", expanded=True):
     show_lattice_anim = st.checkbox("Show 3D Lattice Animation", value=True)
     show_pareto = st.checkbox("Show Pareto Frontier", value=True)
     show_batch = st.checkbox("Show Batch Simulation Queue", value=True)
@@ -193,6 +171,39 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
     else:
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
+
+# --- MASTER BRAND TITLE BAR WITH RESPONSIVE LOGO & ACTIONS ---
+st.markdown("""
+    <div class="brand-container">
+        <div class="brand-title-box">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f0f6fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 3 6.5 12 11 21 6.5 12 2"></polygon>
+              <line x1="12" y1="11" x2="12" y2="13.5"></line>
+              <line x1="4" y1="15.5" x2="20" y2="15.5"></line>
+              <line x1="4" y1="19.5" x2="15" y2="19.5"></line>
+              <circle cx="18.5" cy="19.5" r="1.5" fill="#1f6feb" stroke="#1f6feb"></circle>
+            </svg>
+            <div>
+                <h1 style="margin: 0; color: #58a6ff !important; font-size: 18px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
+                <span style="color: #8b949e; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Materials Informatics Sandbox</span>
+            </div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+action_col1, action_col2, action_col3 = st.columns(3)
+with action_col1:
+    if st.button("💾 Save", use_container_width=True, help="Save simulation state"):
+        st.toast("Workspace state saved successfully!", icon="💾")
+with action_col2:
+    if st.button("📂 Export", use_container_width=True, help="Export session data"):
+        st.toast("Preparing session export package...", icon="📦")
+with action_col3:
+    if st.button("⚙️ Config", use_container_width=True, help="Quick settings"):
+        st.toast("Opening configuration panel...", icon="⚙️")
+
+st.markdown(f"<span style='color: #8b949e; font-size: 12px;'>Session Active &bull; Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 10px 0; border-color: #30363d;'>", unsafe_allow_html=True)
 
 # --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
@@ -323,7 +334,11 @@ else:
 # --- VISUALIZATIONS & PARETO FRONTIER ---
 st.markdown("---")
 st.markdown("#### Spatial & Multi-Objective Visualizations")
-col_v1, col_v2, col_v3 = st.columns(3 if show_pareto else 2)
+
+if show_pareto:
+    col_v1, col_v2, col_v3 = st.columns(3)
+else:
+    col_v1, col_v2 = st.columns(2)
 
 with col_v1:
     st.caption("2D Spatial Stress")
