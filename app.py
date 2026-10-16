@@ -15,7 +15,8 @@ from math_engine import (
     fetch_materials_api_data, 
     app_predict,
     simulate_reagent_mixing,
-    get_standard_reagents
+    get_standard_reagents,
+    compute_elastic_tensor_matrix
 )
 
 # Page Configuration
@@ -26,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Refined High-Contrast Dark Mode Styling
+# Pristine High-Contrast Styling (Deep Navy-Slate Theme with Enhanced Legibility)
 st.markdown("""
     <style>
     .stApp {
@@ -35,6 +36,7 @@ st.markdown("""
     }
     .sidebar .sidebar-content, [data-testid="stSidebar"] {
         background-color: #111625;
+        border-right: 1px solid #30363d;
     }
     h1, h2, h3, h4, h5, h6 {
         color: #58a6ff !important;
@@ -45,41 +47,42 @@ st.markdown("""
     }
     .metric-card {
         background-color: #1f6feb;
-        padding: 15px;
+        padding: 16px;
         border-radius: 8px;
         color: #ffffff;
         text-align: center;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+        margin-bottom: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     }
     .flask-card {
         background-color: #161b22;
         border: 2px dashed #58a6ff;
         padding: 20px;
-        border-radius: 12px;
+        border-radius: 10px;
         text-align: center;
         margin-bottom: 15px;
     }
     .api-card {
         background-color: #161b22;
         border: 1px solid #30363d;
-        padding: 12px;
-        border-radius: 6px;
+        padding: 14px;
+        border-radius: 8px;
         margin-bottom: 15px;
     }
     .rbac-badge {
         background-color: #238636;
         color: #ffffff;
-        padding: 3px 8px;
+        padding: 4px 10px;
         border-radius: 4px;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: 0.5px;
     }
     .stButton>button {
         background-color: #238636;
         color: white;
         border-radius: 6px;
-        border: none;
+        border: 1px solid #2ea043;
         padding: 0.5rem 1rem;
         font-weight: 600;
     }
@@ -93,12 +96,13 @@ st.markdown("""
     .brand-container {
         background-color: #161b22;
         border: 1px solid #30363d;
-        padding: 14px 20px;
+        padding: 16px 20px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .brand-title-box {
         display: flex;
@@ -139,36 +143,46 @@ if not st.session_state.authenticated:
                 st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
-# --- SIDEBAR: CONFIGURATION & SETTINGS (RENDERED FIRST) ---
-st.sidebar.header("Configuration")
+# --- SIDEBAR: PROFESSIONAL TABBED CONTROL DRAWER & SETTINGS ---
+st.sidebar.header("Workspace Control")
 
-with st.sidebar.expander("User Session", expanded=True):
+with st.sidebar.expander("👤 User Session Profile", expanded=True):
     st.sidebar.text(f"Role: {st.session_state.user_role}")
     if st.sidebar.button("Log Out"):
         st.session_state.authenticated = False
         st.rerun()
 
-with st.sidebar.expander("Workspace Layout Settings", expanded=True):
+with st.sidebar.expander("🎛️ R&D Environment Presets", expanded=True):
+    research_mode = st.selectbox("Preset Profile", ["Standard Sandbox", "Precision DFT Mode", "High-Throughput Screening"])
+    if research_mode == "Precision DFT Mode":
+        default_rank, default_tol = 50, 1e-5
+    elif research_mode == "High-Throughput Screening":
+        default_rank, default_tol = 20, 1e-3
+    else:
+        default_rank, default_tol = 30, 1e-4
+
+with st.sidebar.expander("📊 Dashboard Layout Toggles", expanded=True):
     show_lattice_anim = st.checkbox("Show 3D Lattice Animation", value=True)
     show_pareto = st.checkbox("Show Pareto Frontier", value=True)
     show_batch = st.checkbox("Show Batch Simulation Queue", value=True)
+    show_elastic = st.checkbox("Show Elastic Tensor Matrix", value=True)
 
-with st.sidebar.expander("Materials Database API", expanded=False):
-    db_source = st.selectbox("Source", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
+with st.sidebar.expander("🔌 Materials Database API", expanded=False):
+    db_source = st.selectbox("Source Gateway", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
     api_key_input = production_api_key
 
-with st.sidebar.expander("Constituent Elements", expanded=False):
+with st.sidebar.expander("⚛️ Constituent Elements", expanded=False):
     selected_elements = st.multiselect(
         "Elements",
         ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
         default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"]
     )
 
-with st.sidebar.expander("Solver Parameters", expanded=False):
-    tensor_rank = st.slider("Resolution Rank", min_value=10, max_value=80, value=30, step=5)
+with st.sidebar.expander("⚙️ Advanced Solver Parameters", expanded=False):
+    tensor_rank = st.slider("Resolution Rank", min_value=10, max_value=80, value=default_rank, step=5)
     
     if verify_rbac_permission(st.session_state.user_role, "advanced_solvers"):
-        inversion_tolerance = st.selectbox("Tolerance", [1e-3, 1e-4, 1e-5], index=1)
+        inversion_tolerance = st.selectbox("Tolerance", [1e-3, 1e-4, 1e-5], index=1 if default_tol==1e-4 else (2 if default_tol==1e-5 else 0))
         optimizer_method = st.selectbox("Routine", ["Nelder-Mead", "BFGS", "Powell"])
     else:
         inversion_tolerance = 1e-4
@@ -187,7 +201,7 @@ st.markdown("""
             </svg>
             <div>
                 <h1 style="margin: 0; color: #58a6ff !important; font-size: 22px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
-                <span style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;">Materials Informatics Sandbox</span>
+                <span style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;">Materials Informatics Sandbox &bull; v2.6 Enterprise</span>
             </div>
         </div>
     </div>
@@ -195,17 +209,17 @@ st.markdown("""
 
 action_col1, action_col2, action_col3 = st.columns(3)
 with action_col1:
-    if st.button("💾 Save", use_container_width=True, help="Save simulation state"):
-        st.toast("Workspace state saved successfully!", icon="💾")
+    if st.button("💾 Save State", use_container_width=True, help="Save simulation state"):
+        st.toast("Workspace simulation state saved successfully!", icon="💾")
 with action_col2:
-    if st.button("📂 Export", use_container_width=True, help="Export session data"):
-        st.toast("Preparing session export package...", icon="📦")
+    if st.button("📂 Export Package", use_container_width=True, help="Export session data"):
+        st.toast("Preparing enterprise session export package...", icon="📦")
 with action_col3:
-    if st.button("⚙️ Config", use_container_width=True, help="Quick settings"):
-        st.toast("Opening configuration panel...", icon="⚙️")
+    if st.button("⚙️ Config Panel", use_container_width=True, help="Quick settings"):
+        st.toast("Configuration drawer active in sidebar.", icon="⚙️")
 
-st.markdown(f"<span style='color: #8b949e; font-size: 12px;'>Session Active &bull; Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
-st.markdown("<hr style='margin: 10px 0; border-color: #30363d;'>", unsafe_allow_html=True)
+st.markdown(f"<span style='color: #8b949e; font-size: 12px;'>Session Active &bull; Clearance Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 12px 0; border-color: #30363d;'>", unsafe_allow_html=True)
 
 # --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
@@ -230,8 +244,8 @@ with col_flask:
     res = st.session_state.flask_result
     st.markdown(f"""
         <div class="flask-card">
-            <span style="font-size: 24px;">🧪</span><br>
-            <span style="color: #58a6ff; font-weight: 600; font-size: 14px;">Status: {res.get('status')}</span><br>
+            <span style="font-size: 26px;">🧪</span><br>
+            <span style="color: #58a6ff; font-weight: 700; font-size: 14px;">Status: {res.get('status')}</span><br>
             <span style="font-size: 13px; color: #f0f6fc;">Predicted Phase: <b>{res.get('predicted_phase')}</b></span><br>
             <span style="font-size: 12px; color: #8b949e;">Purity: {res.get('purity')}% &bull; Density: {res.get('density')} g/cm³ &bull; Query: `{res.get('query_sig')}`</span>
         </div>
@@ -271,7 +285,7 @@ with col_res:
     
     st.markdown(f"""
         <div class="api-card">
-            <span style="color: #58a6ff; font-weight: 600; font-size: 13px;">API Status: {api_result.get('status')}</span><br>
+            <span style="color: #58a6ff; font-weight: 700; font-size: 13px;">API Status: {api_result.get('status')}</span><br>
             <span style="color: #8b949e; font-size: 12px;">Source: {api_result.get('source')}</span>
         </div>
     """, unsafe_allow_html=True)
@@ -282,7 +296,7 @@ with col_res:
     
     st.markdown(f"""
         <div class="metric-card">
-            <div style="font-weight: 600; margin-bottom: 4px;">Optimization Converged</div>
+            <div style="font-weight: 700; margin-bottom: 4px; font-size: 14px;">Optimization Converged</div>
             <div style="font-size: 13px; color: #f0f6fc;">Max Efficiency: {max(efficiencies):.4f} &bull; Residual: {opt_residual:.6f}</div>
         </div>
     """, unsafe_allow_html=True)
@@ -312,6 +326,23 @@ with col_res:
                 mime="text/html", 
                 use_container_width=True
             )
+
+# --- ADVANCED ENTERPRISE FEATURE: ELASTIC TENSOR MATRIX ---
+if show_elastic and verify_rbac_permission(st.session_state.user_role, "elastic_tensor"):
+    st.markdown("---")
+    st.markdown("#### 📐 Elastic Tensor Stiffness Matrix & Mechanical Moduli")
+    st.markdown("<p style='color: #8b949e; font-size: 13px;'>Calculated 4th-order crystal elastic stiffness tensor invariants and bulk/shear moduli.</p>", unsafe_allow_html=True)
+    
+    elastic_data = compute_elastic_tensor_matrix(tensor_rank, tensor_scaling_factor, curing_temp_input)
+    el_cols = st.columns(len(elastic_data))
+    for idx, (k_name, k_val) in enumerate(elastic_data.items()):
+        with el_cols[idx]:
+            st.markdown(f"""
+                <div style="background-color: #111625; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center;">
+                    <span style="color: #8b949e; font-size: 11px;">{k_name}</span><br>
+                    <span style="color: #58a6ff; font-weight: 700; font-size: 15px;">{k_val}</span>
+                </div>
+            """, unsafe_allow_html=True)
 
 # --- INVERSE DESIGN & HIGH-THROUGHPUT SCREENING MODULE ---
 st.markdown("---")
@@ -459,10 +490,10 @@ if prediction_query:
             st.markdown(f"""
                 <div style="background-color: #111625; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center; min-height: 80px;">
                     <span style="color: #8b949e; font-size: 11px;">Node {idx+1}</span><br>
-                    <span style="color: #58a6ff; font-weight: 600; font-size: 12px;">{element}</span>
+                    <span style="color: #58a6ff; font-weight: 700; font-size: 12px;">{element}</span>
                 </div>
             """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #8b949e; font-size: 11px;'>TensorLab Materials Workspace &bull; Secure R&D Environment</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8b949e; font-size: 11px;'>TensorLab Materials Workspace &bull; Secure R&D Environment &bull; Enterprise Grade v2.6</p>", unsafe_allow_html=True)
