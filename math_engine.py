@@ -16,7 +16,6 @@ def run_optimized_solver(Z, X, Y, routine, tolerance, alpha_guess, beta_guess):
     return opt_alpha, opt_beta, residual
 
 def compute_elastic_tensor_matrix(tensor_rank, scale, temp):
-    # Advanced Enterprise Feature: Simulating 4th-order stiffness tensor invariants (C_ijkl)
     np.int64(tensor_rank)
     c11 = round(210.5 + (scale * 12.0) - (temp * 0.05), 2)
     c12 = round(65.2 + (scale * 4.1), 2)
