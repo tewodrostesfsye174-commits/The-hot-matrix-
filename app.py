@@ -24,7 +24,7 @@ st.set_page_config(
     page_title="TensorLab | Materials Informatics",
     page_icon="🧪",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # High-Contrast Theme Styling
@@ -33,10 +33,6 @@ st.markdown("""
     .stApp {
         background-color: #0b0f19;
         color: #f0f6fc;
-    }
-    .sidebar .sidebar-content, [data-testid="stSidebar"] {
-        background-color: #111625;
-        border-right: 1px solid #30363d;
     }
     h1, h2, h3, h4, h5, h6 {
         color: #58a6ff !important;
@@ -53,6 +49,14 @@ st.markdown("""
         text-align: center;
         margin-bottom: 12px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+    .config-card {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .flask-card {
         background-color: #161b22;
@@ -143,61 +147,6 @@ if not st.session_state.authenticated:
                 st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
-# --- SIDEBAR: DIRECT LISTED CONFIGURATION PANEL ---
-st.sidebar.header("Configuration Panel")
-
-st.sidebar.markdown("##### 👤 User Session")
-st.sidebar.text(f"Role: {st.session_state.user_role}")
-if st.sidebar.button("Log Out"):
-    st.session_state.authenticated = False
-    st.rerun()
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("##### 🎛️ R&D Environment Presets")
-research_mode = st.sidebar.radio(
-    "Select Mode", 
-    ["Standard Sandbox", "Precision DFT Mode", "High-Throughput Screening"],
-    index=0
-)
-
-if research_mode == "Precision DFT Mode":
-    default_rank, default_tol = 50, 1e-5
-elif research_mode == "High-Throughput Screening":
-    default_rank, default_tol = 20, 1e-3
-else:
-    default_rank, default_tol = 30, 1e-4
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("##### 📊 Dashboard Layout Visibility")
-show_lattice_anim = st.sidebar.checkbox("Show 3D Lattice Animation", value=True)
-show_pareto = st.sidebar.checkbox("Show Pareto Frontier", value=True)
-show_batch = st.sidebar.checkbox("Show Batch Simulation Queue", value=True)
-show_elastic = st.sidebar.checkbox("Show Elastic Tensor Matrix", value=True)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("##### 🔌 Materials Database API")
-db_source = st.sidebar.selectbox("Source Gateway", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
-api_key_input = production_api_key
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("##### ⚛️ Constituent Elements")
-selected_elements = st.sidebar.multiselect(
-    "Elements",
-    ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
-    default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"]
-)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("##### ⚙️ Advanced Solver Parameters")
-tensor_rank = st.sidebar.slider("Resolution Rank", min_value=10, max_value=80, value=default_rank, step=5)
-
-if verify_rbac_permission(st.session_state.user_role, "advanced_solvers"):
-    inversion_tolerance = st.sidebar.selectbox("Tolerance", [1e-3, 1e-4, 1e-5], index=1)
-    optimizer_method = st.sidebar.selectbox("Routine", ["Nelder-Mead", "BFGS", "Powell"])
-else:
-    inversion_tolerance = 1e-4
-    optimizer_method = "Nelder-Mead"
-
 # --- MASTER BRAND TITLE BAR ---
 st.markdown("""
     <div class="brand-container">
@@ -225,11 +174,67 @@ with action_col2:
     if st.button("📂 Export Package", use_container_width=True, help="Export session data"):
         st.toast("Preparing enterprise session export package...", icon="📦")
 with action_col3:
-    if st.button("⚙️ Config Panel", use_container_width=True, help="Quick settings"):
-        st.toast("Configuration drawer active in sidebar.", icon="⚙️")
+    if st.button("🔒 Session Management", use_container_width=True, help="Logout session"):
+        st.session_state.authenticated = False
+        st.rerun()
 
 st.markdown(f"<span style='color: #8b949e; font-size: 12px;'>Session Active &bull; Clearance Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
 st.markdown("<hr style='margin: 12px 0; border-color: #30363d;'>", unsafe_allow_html=True)
+
+# --- DIRECT MAIN-PAGE CONFIGURATION HUB (STYLED LIKE REAGENT SHELF) ---
+st.markdown("#### ⚙️ Workspace Configuration Hub")
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Directly configure environment presets, database sources, constituent elements, and layout visibility below.</p>", unsafe_allow_html=True)
+
+config_col1, config_col2 = st.columns(2)
+
+with config_col1:
+    st.markdown("<div class='config-card'>", unsafe_allow_html=True)
+    st.markdown("##### 🎛️ R&D Environment Presets")
+    research_mode = st.radio(
+        "Select Mode", 
+        ["Standard Sandbox", "Precision DFT Mode", "High-Throughput Screening"],
+        index=0,
+        key="main_research_mode"
+    )
+
+    if research_mode == "Precision DFT Mode":
+        default_rank, default_tol = 50, 1e-5
+    elif research_mode == "High-Throughput Screening":
+        default_rank, default_tol = 20, 1e-3
+    else:
+        default_rank, default_tol = 30, 1e-4
+
+    st.markdown("##### 🔌 Materials Database API")
+    db_source = st.selectbox("Source Gateway", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"], key="main_db_source")
+    api_key_input = production_api_key
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with config_col2:
+    st.markdown("<div class='config-card'>", unsafe_allow_html=True)
+    st.markdown("##### 📊 Dashboard Layout Visibility")
+    show_lattice_anim = st.checkbox("Show 3D Lattice Animation", value=True, key="chk_lattice")
+    show_pareto = st.checkbox("Show Pareto Frontier", value=True, key="chk_pareto")
+    show_batch = st.checkbox("Show Batch Simulation Queue", value=True, key="chk_batch")
+    show_elastic = st.checkbox("Show Elastic Tensor Matrix", value=True, key="chk_elastic")
+
+    st.markdown("##### ⚛️ Constituent Elements")
+    selected_elements = st.multiselect(
+        "Elements",
+        ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
+        default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"],
+        key="main_elements"
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+tensor_rank = default_rank
+if verify_rbac_permission(st.session_state.user_role, "advanced_solvers"):
+    inversion_tolerance = default_tol
+    optimizer_method = "Nelder-Mead"
+else:
+    inversion_tolerance = 1e-4
+    optimizer_method = "Nelder-Mead"
+
+st.markdown("---")
 
 # --- VIRTUAL REAGENT SHELF & SYNTHESIS FLASK ---
 st.markdown("#### 🧪 Virtual Synthesis Laboratory")
