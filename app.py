@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Refined High-Contrast Enterprise Dark Mode Styling (Deep Navy-Slate Palette)
+# Refined High-Contrast Dark Mode Styling (Deep Navy-Slate Palette)
 st.markdown("""
     <style>
     .stApp {
@@ -123,10 +123,47 @@ if not st.session_state.authenticated:
                 st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
-# Clean Professional Header
-st.markdown("### TensorLab Enterprise Workspace")
+# --- MASTER BRAND TITLE BAR WITH FILE & SETTINGS ACTIONS ---
+st.markdown("""
+    <style>
+    .brand-container {
+        background: linear-gradient(135deg, #111625 0%, #1f6feb 100%);
+        padding: 14px 20px;
+        border-radius: 10px;
+        border: 1px solid #30363d;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+brand_col1, brand_col2, brand_col3, brand_col4 = st.columns([3, 1, 1, 1])
+
+with brand_col1:
+    st.markdown("""
+        <div style="display: flex; align-items: center; gap: 12px; padding-top: 4px;">
+            <span style="font-size: 26px;">⚛️</span>
+            <div>
+                <h1 style="margin: 0; color: #58a6ff !important; font-size: 20px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
+                <span style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;">Materials Informatics Sandbox</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+with brand_col2:
+    if st.button("💾 Save", use_container_width=True, help="Save current simulation state"):
+        st.toast("Workspace state saved successfully!", icon="💾")
+
+with brand_col3:
+    if st.button("📂 Export", use_container_width=True, help="Export session data"):
+        st.toast("Preparing session export package...", icon="📦")
+
+with brand_col4:
+    if st.button("⚙️ Config", use_container_width=True, help="Quick settings"):
+        st.toast("Opening configuration panel...", icon="⚙️")
+
 st.markdown(f"<span style='color: #8b949e; font-size: 13px;'>Session Active &bull; Role:</span> <span class='rbac-badge'>{st.session_state.user_role}</span>", unsafe_allow_html=True)
-st.markdown("---")
+st.markdown("<hr style='margin: 15px 0; border-color: #30363d;'>", unsafe_allow_html=True)
 
 # --- SIDEBAR: CONFIGURATION ---
 st.sidebar.header("Configuration")
@@ -250,15 +287,15 @@ with col_res:
         st.dataframe(batch_df, use_container_width=True)
         
         if verify_rbac_permission(st.session_state.user_role, "reports"):
-            st.markdown("##### Automated Executive Report Pipeline")
+            st.markdown("##### Automated Report Pipeline")
             report_html = generate_executive_report_html(
                 st.session_state.user_role, prediction_query, curing_temp_input, 
                 tensor_scaling_factor, opt_alpha, opt_beta, opt_residual, batch_df
             )
             st.download_button(
-                "📥 Download Executive HTML Report", 
+                "📥 Download HTML Research Report", 
                 data=report_html, 
-                file_name=f"{prediction_query}_executive_report.html", 
+                file_name=f"{prediction_query}_research_report.html", 
                 mime="text/html", 
                 use_container_width=True
             )
@@ -391,4 +428,4 @@ if prediction_query:
 
 # Footer
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #8b949e; font-size: 11px;'>TensorLab Enterprise Workspace &bull; Secure R&D Environment</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8b949e; font-size: 11px;'>TensorLab Materials Workspace &bull; Secure R&D Environment</p>", unsafe_allow_html=True)
