@@ -91,17 +91,19 @@ st.markdown("""
         color: #f0f6fc !important;
     }
     .brand-container {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        padding: 14px 20px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 10px;
-        padding: 5px 0;
+        margin-bottom: 15px;
     }
     .brand-title-box {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 14px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -172,20 +174,20 @@ with st.sidebar.expander("Solver Parameters", expanded=False):
         inversion_tolerance = 1e-4
         optimizer_method = "Nelder-Mead"
 
-# --- MASTER BRAND TITLE BAR WITH RESPONSIVE LOGO & ACTIONS ---
+# --- MASTER BRAND TITLE BAR WITH HIGH-CONTRAST LOGO & ACTIONS ---
 st.markdown("""
     <div class="brand-container">
         <div class="brand-title-box">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f0f6fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 3 6.5 12 11 21 6.5 12 2"></polygon>
-              <line x1="12" y1="11" x2="12" y2="13.5"></line>
-              <line x1="4" y1="15.5" x2="20" y2="15.5"></line>
-              <line x1="4" y1="19.5" x2="15" y2="19.5"></line>
-              <circle cx="18.5" cy="19.5" r="1.5" fill="#1f6feb" stroke="#1f6feb"></circle>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 3 6.5 12 11 21 6.5 12 2" stroke="#58a6ff" stroke-width="2"></polygon>
+              <line x1="12" y1="11" x2="12" y2="13.5" stroke="#58a6ff" stroke-width="2"></line>
+              <line x1="4" y1="15.5" x2="20" y2="15.5" stroke="#58a6ff" stroke-width="2"></line>
+              <line x1="4" y1="19.5" x2="15" y2="19.5" stroke="#58a6ff" stroke-width="2"></line>
+              <circle cx="18.5" cy="19.5" r="1.5" fill="#238636" stroke="#238636" stroke-width="2"></circle>
             </svg>
             <div>
-                <h1 style="margin: 0; color: #58a6ff !important; font-size: 18px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
-                <span style="color: #8b949e; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;">Materials Informatics Sandbox</span>
+                <h1 style="margin: 0; color: #58a6ff !important; font-size: 22px !important; font-weight: 800; letter-spacing: 0.5px;">TENSOR<span style="color: #f0f6fc;">LAB</span></h1>
+                <span style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;">Materials Informatics Sandbox</span>
             </div>
         </div>
     </div>
