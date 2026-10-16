@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Pristine High-Contrast Styling (Deep Navy-Slate Theme with Enhanced Legibility)
+# High-Contrast Theme Styling
 st.markdown("""
     <style>
     .stApp {
@@ -143,52 +143,62 @@ if not st.session_state.authenticated:
                 st.error("Invalid access code. Use `demo123`.")
     st.stop()
 
-# --- SIDEBAR: PROFESSIONAL TABBED CONTROL DRAWER & SETTINGS ---
-st.sidebar.header("Workspace Control")
+# --- SIDEBAR: DIRECT LISTED CONFIGURATION PANEL ---
+st.sidebar.header("Configuration Panel")
 
-with st.sidebar.expander("👤 User Session Profile", expanded=True):
-    st.sidebar.text(f"Role: {st.session_state.user_role}")
-    if st.sidebar.button("Log Out"):
-        st.session_state.authenticated = False
-        st.rerun()
+st.sidebar.markdown("##### 👤 User Session")
+st.sidebar.text(f"Role: {st.session_state.user_role}")
+if st.sidebar.button("Log Out"):
+    st.session_state.authenticated = False
+    st.rerun()
 
-with st.sidebar.expander("🎛️ R&D Environment Presets", expanded=True):
-    research_mode = st.selectbox("Preset Profile", ["Standard Sandbox", "Precision DFT Mode", "High-Throughput Screening"])
-    if research_mode == "Precision DFT Mode":
-        default_rank, default_tol = 50, 1e-5
-    elif research_mode == "High-Throughput Screening":
-        default_rank, default_tol = 20, 1e-3
-    else:
-        default_rank, default_tol = 30, 1e-4
+st.sidebar.markdown("---")
+st.sidebar.markdown("##### 🎛️ R&D Environment Presets")
+research_mode = st.sidebar.radio(
+    "Select Mode", 
+    ["Standard Sandbox", "Precision DFT Mode", "High-Throughput Screening"],
+    index=0
+)
 
-with st.sidebar.expander("📊 Dashboard Layout Toggles", expanded=True):
-    show_lattice_anim = st.checkbox("Show 3D Lattice Animation", value=True)
-    show_pareto = st.checkbox("Show Pareto Frontier", value=True)
-    show_batch = st.checkbox("Show Batch Simulation Queue", value=True)
-    show_elastic = st.checkbox("Show Elastic Tensor Matrix", value=True)
+if research_mode == "Precision DFT Mode":
+    default_rank, default_tol = 50, 1e-5
+elif research_mode == "High-Throughput Screening":
+    default_rank, default_tol = 20, 1e-3
+else:
+    default_rank, default_tol = 30, 1e-4
 
-with st.sidebar.expander("🔌 Materials Database API", expanded=False):
-    db_source = st.selectbox("Source Gateway", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
-    api_key_input = production_api_key
+st.sidebar.markdown("---")
+st.sidebar.markdown("##### 📊 Dashboard Layout Visibility")
+show_lattice_anim = st.sidebar.checkbox("Show 3D Lattice Animation", value=True)
+show_pareto = st.sidebar.checkbox("Show Pareto Frontier", value=True)
+show_batch = st.sidebar.checkbox("Show Batch Simulation Queue", value=True)
+show_elastic = st.sidebar.checkbox("Show Elastic Tensor Matrix", value=True)
 
-with st.sidebar.expander("⚛️ Constituent Elements", expanded=False):
-    selected_elements = st.multiselect(
-        "Elements",
-        ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
-        default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"]
-    )
+st.sidebar.markdown("---")
+st.sidebar.markdown("##### 🔌 Materials Database API")
+db_source = st.sidebar.selectbox("Source Gateway", ["Materials Project REST API", "PubChem Crystal DB", "Synthetic Generator"])
+api_key_input = production_api_key
 
-with st.sidebar.expander("⚙️ Advanced Solver Parameters", expanded=False):
-    tensor_rank = st.slider("Resolution Rank", min_value=10, max_value=80, value=default_rank, step=5)
-    
-    if verify_rbac_permission(st.session_state.user_role, "advanced_solvers"):
-        inversion_tolerance = st.selectbox("Tolerance", [1e-3, 1e-4, 1e-5], index=1 if default_tol==1e-4 else (2 if default_tol==1e-5 else 0))
-        optimizer_method = st.selectbox("Routine", ["Nelder-Mead", "BFGS", "Powell"])
-    else:
-        inversion_tolerance = 1e-4
-        optimizer_method = "Nelder-Mead"
+st.sidebar.markdown("---")
+st.sidebar.markdown("##### ⚛️ Constituent Elements")
+selected_elements = st.sidebar.multiselect(
+    "Elements",
+    ["Carbon (C)", "Silicon (Si)", "Aluminum (Al)", "Titanium (Ti)", "Oxygen (O)", "Hydrogen (H)", "Nitrogen (N)", "Iron (Fe)"],
+    default=["Carbon (C)", "Silicon (Si)", "Oxygen (O)"]
+)
 
-# --- MASTER BRAND TITLE BAR WITH HIGH-CONTRAST LOGO & ACTIONS ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("##### ⚙️ Advanced Solver Parameters")
+tensor_rank = st.sidebar.slider("Resolution Rank", min_value=10, max_value=80, value=default_rank, step=5)
+
+if verify_rbac_permission(st.session_state.user_role, "advanced_solvers"):
+    inversion_tolerance = st.sidebar.selectbox("Tolerance", [1e-3, 1e-4, 1e-5], index=1)
+    optimizer_method = st.sidebar.selectbox("Routine", ["Nelder-Mead", "BFGS", "Powell"])
+else:
+    inversion_tolerance = 1e-4
+    optimizer_method = "Nelder-Mead"
+
+# --- MASTER BRAND TITLE BAR ---
 st.markdown("""
     <div class="brand-container">
         <div class="brand-title-box">
