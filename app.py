@@ -359,25 +359,35 @@ if show_elastic and verify_rbac_permission(st.session_state.user_role, "elastic_
                 </div>
             """, unsafe_allow_html=True)
 
-# --- INVERSE DESIGN & HIGH-THROUGHPUT SCREENING MODULE ---
+# --- INVERSE DESIGN & MULTI-DOMAIN SCREENING MODULE ---
 st.markdown("---")
-st.markdown("#### Inverse Design & Reagent Screening")
+st.markdown("#### Multi-Domain Inverse Design & Reagent Screening")
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Expand domain categories below to configure multi-attribute property vectors for custom adhesives, batteries, or structural materials.</p>", unsafe_allow_html=True)
 
 if verify_rbac_permission(st.session_state.user_role, "inverse_design"):
-    inv_col1, inv_col2 = st.columns([1, 2])
-    with inv_col1:
+    with st.expander("⚙️ Mechanical Domain Targets", expanded=True):
         target_str_input = st.number_input("Target Strength (MPa)", min_value=50.0, max_value=350.0, value=200.0, step=10.0)
         target_den_input = st.number_input("Target Density (g/cm³)", min_value=1.0, max_value=5.0, value=2.5, step=0.1)
-        run_screening_btn = st.button("Screen 1,000+ Reagents", use_container_width=True)
-    
-    with inv_col2:
-        if run_screening_btn:
-            screening_df = run_inverse_design_screening(target_str_input, target_den_input, available_shelf)
-            st.dataframe(screening_df, use_container_width=True)
-        else:
-            st.info("Configure your target material specifications on the left and click screen to search the 1,000+ reagent catalog.")
+
+    with st.expander("🧪 Rheological & Fluid Domain Targets (Adhesives/Coatings)", expanded=False):
+        target_visc_input = st.number_input("Target Viscosity (cP)", min_value=10.0, max_value=10000.0, value=1000.0, step=50.0)
+
+    with st.expander("⚡ Electrochemical & Thermal Domain Targets (Batteries/Electronics)", expanded=False):
+        target_cond_input = st.number_input("Target Ionic Conductivity (S/cm)", min_value=0.0001, max_value=1.0, value=0.01, step=0.001)
+        target_tg_input = st.number_input("Target Glass Transition Temp Tg (°C)", min_value=-50.0, max_value=300.0, value=80.0, step=5.0)
+
+    if st.button("🚀 Screen 1,000+ Reagents via Multi-Domain Vector", use_container_width=True):
+        targets_dict = {
+            "strength": target_str_input,
+            "density": target_den_input,
+            "viscosity": target_visc_input,
+            "conductivity": target_cond_input,
+            "tg": target_tg_input
+        }
+        screening_df = run_inverse_design_screening(targets_dict, available_shelf)
+        st.dataframe(screening_df, use_container_width=True)
 else:
-    st.info("Inverse design & high-throughput screening restricted for current clearance level.")
+    st.info("Inverse design & multi-domain screening restricted for current clearance level.")
 
 # --- VISUALIZATIONS & PARETO FRONTIER ---
 st.markdown("---")
