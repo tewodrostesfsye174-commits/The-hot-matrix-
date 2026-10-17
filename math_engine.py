@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import json
 
 def generate_tensor_grid(rank, scale, temp):
     x = np.linspace(-scale, scale, rank)
@@ -16,7 +15,6 @@ def run_optimized_solver(Z, X, Y, routine, tolerance, alpha_guess, beta_guess):
     return opt_alpha, opt_beta, residual
 
 def compute_elastic_tensor_matrix(tensor_rank, scale, temp):
-    np.int64(tensor_rank)
     c11 = round(210.5 + (scale * 12.0) - (temp * 0.05), 2)
     c12 = round(65.2 + (scale * 4.1), 2)
     c44 = round(75.8 + (temp * 0.08), 2)
@@ -47,7 +45,6 @@ def run_batch_simulation(queries, temp, scale):
 def run_inverse_design_screening(targets, reagents_list):
     results = []
     np.random.seed(42)
-    
     t_strength = targets.get("strength", 200.0)
     t_density = targets.get("density", 2.5)
     t_viscosity = targets.get("viscosity", 1000.0)
@@ -78,7 +75,6 @@ def run_inverse_design_screening(targets, reagents_list):
                 "Est. Conductivity (S/cm)": sim_conductivity,
                 "Match Score (%)": max(0.0, match_score)
             })
-            
     df_res = pd.DataFrame(results)
     if not df_res.empty:
         return df_res.sort_values(by="Match Score (%)", ascending=False).head(10)
@@ -103,13 +99,11 @@ def generate_crystal_lattice_animation(lattice_type="FCC", thermal_factor=1.0):
             [0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
             [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75]
         ])
-    
     frames_data = []
     np.random.seed(100)
     for i in range(15):
         noise = np.sin(i * 0.5) * 0.08 * thermal_factor * np.random.randn(*base_coords.shape)
         frames_data.append(base_coords + noise)
-        
     return base_coords, frames_data
 
 def get_standard_reagents():
@@ -121,7 +115,6 @@ def get_standard_reagents():
         "Carbon Nanotube (CNT)", "Iron Oxide (Fe2O3)", "Nitrogen Stabilizer (N2)",
         "Graphene Oxide (GO)", "Boron Nitride (BN)", "Tungsten Carbide (WC)", "Silicon Carbide (SiC)"
     ]
-    
     counter = 11
     for el in elements:
         for cat in categories:
@@ -129,10 +122,8 @@ def get_standard_reagents():
                 if len(reagents) < 1000:
                     reagents.append(f"{el} {cat} Grade-{val} (Ref-{counter:04d})")
                     counter += 1
-                    
     while len(reagents) < 1000:
         reagents.append(f"Synthetic Lab Reagent Spec-{len(reagents)+1} (High-Purity)")
-        
     return reagents
 
 def simulate_reagent_mixing(selected_reagents, curing_temp):
@@ -143,16 +134,12 @@ def simulate_reagent_mixing(selected_reagents, curing_temp):
             "predicted_phase": "None", "derived_temp": curing_temp, 
             "derived_scale": 1.0, "query_sig": "EMPTY-FLASK"
         }
-    
     base_purity = min(99.9, 85.0 + (reagent_count * 1.2) - (abs(curing_temp - 150) * 0.05))
     base_density = round(2.2 + (reagent_count * 0.2), 2)
     derived_scale = round(1.0 + (reagent_count * 0.05) + (curing_temp / 500.0), 2)
-    
     phases = ["FCC Crystalline Matrix", "BCC Intermetallic Lattice", "Diamond Cubic Composite", "Amorphous Polymer Network"]
     selected_phase = phases[hash(tuple(selected_reagents)) % len(phases)]
-    
     query_sig = f"SYNTH-BATCH-{reagent_count}comps-{int(curing_temp)}C"
-    
     return {
         "status": "Reaction Successful & Mapped to Math Engine",
         "purity": round(base_purity, 2),
@@ -171,17 +158,6 @@ def verify_rbac_permission(role, feature):
         "Enterprise Admin": ["crystal_animation", "advanced_solvers", "batch_queues", "reports", "inverse_design", "elastic_tensor"]
     }
     return feature in permissions.get(role, [])
-
-def fetch_materials_api_data(api_key, query):
-    return {"status": "Connected to External Research API", "source": "Materials Project Gateway (Secure TLS v1.3)"}
-
-def app_predict(query, elements, temp):
-    return [
-        f"DFT-Optimized Matrix ({query})",
-        f"Cross-linked Prepolymer Backbone (Temp:{temp}°C)",
-        f"Secondary Element Phase ({elements[0] if elements else 'Silicon'})",
-        "Silane Coupling Interfacial Agent"
-    ]
 
 def generate_executive_report_html(role, query, temp, scale, alpha, beta, residual, batch_df):
     return f"""
