@@ -44,24 +44,45 @@ def run_batch_simulation(queries, temp, scale):
         data.append({"Compound Signature": q_clean, "Curing Temp (°C)": temp, "Predicted Score": score, "Status": "Converged"})
     return pd.DataFrame(data)
 
-def run_inverse_design_screening(target_strength, target_density, reagents_list):
+def run_inverse_design_screening(targets, reagents_list):
     results = []
     np.random.seed(42)
-    for r in reagents_list[:80]:
-        sim_strength = round(np.random.uniform(80, 320), 2)
-        sim_density = round(np.random.uniform(1.8, 4.5), 2)
-        match_score = round(100 - (abs(sim_strength - target_strength) * 0.25 + abs(sim_density - target_density) * 12), 2)
-        if match_score > 35:
+    
+    t_strength = targets.get("strength", 200.0)
+    t_density = targets.get("density", 2.5)
+    t_viscosity = targets.get("viscosity", 1000.0)
+    t_conductivity = targets.get("conductivity", 0.01)
+    t_tg = targets.get("tg", 80.0)
+
+    for r in reagents_list[:120]:
+        sim_strength = round(np.random.uniform(50, 350), 2)
+        sim_density = round(np.random.uniform(1.0, 4.5), 2)
+        sim_viscosity = round(np.random.uniform(50, 5000), 2)
+        sim_conductivity = round(np.random.uniform(0.0001, 0.5), 4)
+        sim_tg = round(np.random.uniform(-20, 200), 1)
+        
+        match_score = round(100 - (
+            abs(sim_strength - t_strength) * 0.15 +
+            abs(sim_density - t_density) * 10.0 +
+            abs(sim_viscosity - t_viscosity) * 0.002 +
+            abs(sim_conductivity - t_conductivity) * 20.0 +
+            abs(sim_tg - t_tg) * 0.1
+        ), 2)
+        
+        if match_score > 30:
             results.append({
                 "Reagent Candidate": r,
                 "Est. Strength (MPa)": sim_strength,
                 "Est. Density (g/cm³)": sim_density,
+                "Est. Viscosity (cP)": sim_viscosity,
+                "Est. Conductivity (S/cm)": sim_conductivity,
                 "Match Score (%)": max(0.0, match_score)
             })
+            
     df_res = pd.DataFrame(results)
     if not df_res.empty:
         return df_res.sort_values(by="Match Score (%)", ascending=False).head(10)
-    return pd.DataFrame(columns=["Reagent Candidate", "Est. Strength (MPa)", "Est. Density (g/cm³)", "Match Score (%)"])
+    return pd.DataFrame(columns=["Reagent Candidate", "Est. Strength (MPa)", "Est. Density (g/cm³)", "Est. Viscosity (cP)", "Est. Conductivity (S/cm)", "Match Score (%)"])
 
 def generate_crystal_lattice_animation(lattice_type="FCC", thermal_factor=1.0):
     if lattice_type == "FCC":
