@@ -1,4 +1,4 @@
-# app.py - Main Multi-Page Streamlit Entry Point (Fast Execution Routing)
+# app.py - Main Multi-Page Streamlit Entry Point (Fixed Rendering)
 import streamlit as st
 
 # Page Configuration
@@ -56,7 +56,7 @@ if st.sidebar.button("🚪 Logout Session", use_container_width=True):
     st.session_state.clear()
     st.rerun()
 
-# Direct & Fast Page View Dispatcher Routing
+# Page View Dispatcher Routing (Properly triggers the view files)
 if page_selection == "Home Overview":
     import views.home_overview
 elif page_selection == "Synthesis Lab":
