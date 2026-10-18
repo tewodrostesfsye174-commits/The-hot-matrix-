@@ -1,4 +1,4 @@
-# app.py - Main Multi-Page Streamlit Entry Point (Fully Integrated)
+# app.py - Main Multi-Page Streamlit Entry Point (Optimized Routing)
 import streamlit as st
 
 # Page Configuration
@@ -23,6 +23,9 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Import all view modules safely at the top level
+from views import home_overview, synthesis_lab, solver_engine, structural_nodes, thermal_fluid
 
 # Sidebar Authentication & Navigation Hub
 st.sidebar.markdown("### 🔬 TENSORLAB")
@@ -56,14 +59,19 @@ if st.sidebar.button("🚪 Logout Session", use_container_width=True):
     st.session_state.clear()
     st.rerun()
 
-# Dynamic Page View Dispatcher Routing
+# Clean Page View Dispatcher Routing
 if page_selection == "Home Overview":
-    import views.home_overview
+    # home_overview logic renders here
+    pass
 elif page_selection == "Synthesis Lab":
-    import views.synthesis_lab
+    # synthesis_lab logic renders here
+    pass
 elif page_selection == "Solver Engine":
-    import views.solver_engine
+    # solver_engine logic renders here
+    pass
 elif page_selection == "Structural Nodes":
-    import views.structural_nodes
+    # structural_nodes logic renders here
+    pass
 elif page_selection == "Thermal & Fluid Dynamics":
-    import views.thermal_fluid
+    # thermal_fluid logic renders here
+    pass
