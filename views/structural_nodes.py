@@ -1,7 +1,7 @@
-# views/structural_nodes.py - Crystal Lattice Dynamics & DFT Mapped Nodes
+# views/structural_nodes.py - Crystal Lattice Dynamics, DFT Nodes & Experimental Validation
 import streamlit as st
 import plotly.graph_objects as go
-from math_engine import generate_crystal_lattice_animation, app_predict, verify_rbac_permission
+from math_engine import generate_crystal_lattice_animation, app_predict, validate_experimental_results, verify_rbac_permission
 
 st.markdown("### ⚛️ Structural Nodes & Crystal Lattice Dynamics")
 st.markdown("<p style='color: #8b949e; font-size: 13px;'>Animate unit cell vibrations and inspect DFT-mapped atomic nodes.</p>", unsafe_allow_html=True)
@@ -90,3 +90,33 @@ for idx, element in enumerate(predicted_elements):
                 <span style="color: #58a6ff; font-weight: 700; font-size: 12px;">{element}</span>
             </div>
         """, unsafe_allow_html=True)
+
+# Experimental vs DFT Validation Module Integration
+st.markdown("---")
+st.markdown("#### 🔬 Experimental vs. TensorLab / DFT Validation")
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Benchmark your physical laboratory test results against real-time predictive tensor outputs.</p>", unsafe_allow_html=True)
+
+col_ex1, col_ex2, col_ex3 = st.columns(3)
+with col_ex1:
+    exp_prop_name = st.selectbox("Material Property", ["Strength (MPa)", "Density (g/cm³)", "Bulk Modulus (GPa)", "Conductivity (S/cm)"], key="val_prop")
+with col_ex2:
+    exp_measured = st.number_input("Experimental Lab Value", value=210.0, step=1.0, key="val_exp")
+with col_ex3:
+    pred_modeled = st.number_input("TensorLab Predicted Value", value=200.0, step=1.0, key="val_pred")
+
+if st.button("⚖️ Run Validation & Error Analysis", use_container_width=True, key="btn_validate"):
+    val_res = validate_experimental_results(exp_measured, pred_modeled, exp_prop_name)
+    
+    st.markdown(f"""
+        <div class="config-card" style="border-left: 4px solid #238636;">
+            <span style="color: #58a6ff; font-weight: 700;">Validation Status: {val_res['status']}</span><br>
+            <span style="font-size: 13px; color: #f0f6fc;">
+                <b>Property:</b> {val_res['property']} &bull; 
+                <b>Experimental:</b> {val_res['experimental']} &bull; 
+                <b>Predicted:</b> {val_res['predicted']}
+            </span><br>
+            <span style="font-size: 12px; color: #8b949e;">
+                Absolute Error: {val_res['abs_error']} &bull; Percentage Deviation: <b>{val_res['pct_error']}%</b>
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
