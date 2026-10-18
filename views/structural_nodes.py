@@ -1,7 +1,14 @@
-# views/structural_nodes.py - Crystal Lattice Dynamics, DFT Nodes & Experimental Validation
+# views/structural_nodes.py - Crystal Lattice Dynamics, DFT Quantum Node & Experimental Validation
 import streamlit as st
 import plotly.graph_objects as go
-from math_engine import generate_crystal_lattice_animation, app_predict, validate_experimental_results, verify_rbac_permission
+from math_engine import (
+    generate_crystal_lattice_animation, 
+    app_predict, 
+    validate_experimental_results, 
+    compute_dft_quantum_validation,
+    run_monte_carlo_stress_test,
+    verify_rbac_permission
+)
 
 st.markdown("### ⚛️ Structural Nodes & Crystal Lattice Dynamics")
 st.markdown("<p style='color: #8b949e; font-size: 13px;'>Animate unit cell vibrations and inspect DFT-mapped atomic nodes.</p>", unsafe_allow_html=True)
@@ -79,23 +86,54 @@ else:
     st.info("Crystalline lattice animation restricted for current clearance level.")
 
 st.markdown("---")
-st.markdown("#### DFT Mapped Element Nodes")
-predicted_elements = app_predict("SYNTH-BATCH-2comps-180C", ["Carbon (C)", "Silicon (Si)", "Oxygen (O)"], 180.0)
-cols = st.columns(len(predicted_elements))
-for idx, element in enumerate(predicted_elements):
-    with cols[idx]:
-        st.markdown(f"""
-            <div style="background-color: #111625; border: 1px solid #30363d; padding: 12px; border-radius: 8px; text-align: center; min-height: 80px;">
-                <span style="color: #8b949e; font-size: 11px;">Node {idx+1}</span><br>
-                <span style="color: #58a6ff; font-weight: 700; font-size: 12px;">{element}</span>
-            </div>
-        """, unsafe_allow_html=True)
+st.markdown("#### ⚛️ Advanced DFT Quantum Outcome Examination")
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Inspect quantum mechanical properties including bandgap energy, electronic Density of States (DOS), and atomic forces.</p>", unsafe_allow_html=True)
 
-# Experimental vs DFT Validation Module Integration
+col_dft1, col_dft2 = st.columns(2)
+with col_dft1:
+    dft_mat_select = st.selectbox("Select Crystal Material Node", ["Carbon Nanotube (CNT)", "Silicon Dioxide (SiO2)", "Aluminum Oxide (Al2O3)", "Lithium Iron Phosphate (LiFePO4)"], key="dft_mat")
+with col_dft2:
+    dft_lattice_param = st.number_input("Lattice Spacing Parameter (Å)", min_value=1.0, max_value=10.0, value=3.84, step=0.05, key="dft_lat")
+
+if st.button("🧪 Execute DFT Quantum Analysis", use_container_width=True, key="btn_dft_exec"):
+    dft_res = compute_dft_quantum_validation(dft_mat_select, dft_lattice_param)
+    st.markdown(f"""
+        <div style="background-color: #111625; border: 1px solid #30363d; border-left: 4px solid #58a6ff; padding: 14px; border-radius: 8px;">
+            <span style="color: #58a6ff; font-weight: 700; font-size: 14px;">Status: {dft_res['dft_status']}</span><br>
+            <span style="font-size: 13px; color: #f0f6fc;">
+                <b>Material Node:</b> {dft_res['material']} &bull; 
+                <b>Bandgap ($E_g$):</b> {dft_res['bandgap_ev']} eV
+            </span><br>
+            <span style="font-size: 12px; color: #8b949e;">
+                Peak Density of States (DOS): {dft_res['dos_peak_states']} states/eV &bull; 
+                Max Atomic Force: <b>{dft_res['atomic_force_ev_ang']} eV/Å</b>
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
+st.markdown("#### 🔄 Repeated Stress-Testing & Monte Carlo Sensitivity Analysis")
+st.markdown("<p style='color: #8b949e; font-size: 13px;'>Run iterative stochastic stress tests across thermal and scale perturbation boundaries.</p>", unsafe_allow_html=True)
+
+col_mc1, col_mc2 = st.columns(2)
+with col_mc1:
+    mc_base_temp = st.number_input("Base Curing Temperature (°C)", value=180.0, step=5.0, key="mc_temp")
+with col_mc2:
+    mc_iterations = st.slider("Monte Carlo Iterations", min_value=10, max_value=200, value=50, step=10, key="mc_iter")
+
+if st.button("🚀 Run Monte Carlo Stress Test", use_container_width=True, key="btn_mc"):
+    mc_df = run_monte_carlo_stress_test(mc_base_temp, 2.0, mc_iterations)
+    st.dataframe(mc_df, use_container_width=True)
+    st.download_button(
+        "📥 Download Monte Carlo Stress Report (CSV)",
+        data=mc_df.to_csv(index=False),
+        file_name="TensorLab_MonteCarlo_Stress_Report.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+
 st.markdown("---")
 st.markdown("#### 🔬 Experimental vs. TensorLab / DFT Validation")
-st.markdown("<p style='color: #8b949e; font-size: 13px;'>Benchmark your physical laboratory test results against real-time predictive tensor outputs.</p>", unsafe_allow_html=True)
-
 col_ex1, col_ex2, col_ex3 = st.columns(3)
 with col_ex1:
     exp_prop_name = st.selectbox("Material Property", ["Strength (MPa)", "Density (g/cm³)", "Bulk Modulus (GPa)", "Conductivity (S/cm)"], key="val_prop")
