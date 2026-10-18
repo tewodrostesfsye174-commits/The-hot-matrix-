@@ -76,7 +76,6 @@ def run_batch_simulation(queries, curing_temp, scale):
     return pd.DataFrame(records)
 
 def run_inverse_design_screening(targets, available_shelf):
-    # Dynamically seed and adjust based on user target inputs so outcomes update live
     seed_val = int(targets.get("strength", 200) + targets.get("conductivity", 0.01) * 100 + targets.get("viscosity", 1000) / 100)
     np.random.seed(seed_val)
     
@@ -140,6 +139,29 @@ def compute_elastic_tensor_matrix(rank, scale, temp):
         "C44 (GPa)": round(120.8 * scale, 2),
         "Bulk Modulus K": round(153.3 * scale, 2),
         "Shear Modulus G": round(95.6 * scale, 2)
+    }
+
+def validate_experimental_results(experimental_value, predicted_value, property_name="Property"):
+    exp_val = float(experimental_value)
+    pred_val = float(predicted_value)
+    
+    absolute_error = abs(pred_val - exp_val)
+    percentage_error = (absolute_error / exp_val * 100) if exp_val != 0 else 0.0
+    
+    if percentage_error <= 5.0:
+        status = "High Fidelity (Conforms to DFT Benchmark)"
+    elif percentage_error <= 15.0:
+        status = "Acceptable Deviation Range"
+    else:
+        status = "Significant Variance - Review Parameters"
+        
+    return {
+        "property": property_name,
+        "experimental": exp_val,
+        "predicted": pred_val,
+        "abs_error": round(absolute_error, 4),
+        "pct_error": round(percentage_error, 2),
+        "status": status
     }
 
 def fetch_materials_api_data(api_key, query):
