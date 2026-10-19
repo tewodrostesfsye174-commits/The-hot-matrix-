@@ -1,4 +1,4 @@
-# math_engine.py - Complete Backend Computational & Materials Science Engine (Clean Caching)
+# math_engine.py - Complete Backend Computational & Materials Science Engine (Safe Caching)
 import streamlit as st
 import numpy as np
 import pandas as pd
