@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import io
 import base64
 
+@st.cache_data
 def get_standard_reagents():
     return [
         "Silicon Dioxide (SiO2)", "Carbon Nanotube (CNT)", "Aluminum Oxide (Al2O3)",
@@ -51,6 +52,7 @@ def generate_tensor_grid(rank, scale, temp):
     Z = scale * np.sin(X * (temp / 100.0)) * np.cos(Y * (temp / 100.0)) + np.exp(-(X**2 + Y**2) / 4.0)
     return x, y, X, Y, Z
 
+@st.cache_data
 def run_optimized_solver(Z, X, Y, method, tolerance, alpha_guess, beta_guess):
     opt_alpha = alpha_guess * 1.15
     opt_beta = beta_guess * 0.92
@@ -66,6 +68,7 @@ def run_pareto_optimization(rank, temp):
     efficiencies = (strengths / masses) * (temp / 200.0)
     return weights, strengths, masses, efficiencies
 
+@st.cache_data
 def run_batch_simulation(queries, curing_temp, scale):
     records = []
     for q in queries:
@@ -79,6 +82,7 @@ def run_batch_simulation(queries, curing_temp, scale):
         })
     return pd.DataFrame(records)
 
+@st.cache_data
 def run_inverse_design_screening(targets, available_shelf):
     seed_val = int(targets.get("strength", 200) + targets.get("conductivity", 0.01) * 100 + targets.get("viscosity", 1000) / 100)
     np.random.seed(seed_val)
@@ -137,6 +141,7 @@ def generate_crystal_lattice_animation(lattice_type, thermal_factor):
         
     return base, frames_data
 
+@st.cache_data
 def compute_elastic_tensor_matrix(rank, scale, temp):
     return {
         "C11 (GPa)": round(230.5 * scale * (temp/180), 2),
@@ -146,6 +151,7 @@ def compute_elastic_tensor_matrix(rank, scale, temp):
         "Shear Modulus G": round(95.6 * scale, 2)
     }
 
+@st.cache_data
 def validate_experimental_results(experimental_value, predicted_value, property_name="Property"):
     exp_val = float(experimental_value)
     pred_val = float(predicted_value)
@@ -169,6 +175,7 @@ def validate_experimental_results(experimental_value, predicted_value, property_
         "status": status
     }
 
+@st.cache_data
 def run_monte_carlo_stress_test(base_temp, scale_factor, iterations=50):
     np.random.seed(42)
     records = []
@@ -187,6 +194,7 @@ def run_monte_carlo_stress_test(base_temp, scale_factor, iterations=50):
         })
     return pd.DataFrame(records)
 
+@st.cache_data
 def compute_dft_quantum_validation(material_type, lattice_spacing):
     np.random.seed(int(lattice_spacing * 10))
     if "Carbon" in material_type or "Graphene" in material_type or "Nanotube" in material_type:
@@ -210,6 +218,7 @@ def compute_dft_quantum_validation(material_type, lattice_spacing):
         "dft_status": "Converged via GGA-PBE Functional"
     }
 
+@st.cache_data
 def run_thermal_fluid_simulation(viscosity_val, thermal_conductivity, flow_rate):
     np.random.seed(int(flow_rate * 10))
     reynolds_number = round((2 * 1000 * flow_rate * 0.05) / (viscosity_val if viscosity_val > 0 else 1.0), 4)
@@ -229,6 +238,7 @@ def run_thermal_fluid_simulation(viscosity_val, thermal_conductivity, flow_rate)
         "status": "Thermal-Fluid Coupling Converged"
     }
 
+@st.cache_data
 def generate_enterprise_pdf_report_data(role, query, temp, scale, batch_df):
     report_content = f"""
 ====================================================================
@@ -252,6 +262,7 @@ Primary Query Signature: {query}
     """
     return report_content
 
+@st.cache_data
 def fetch_materials_api_data(api_key, query):
     return {
         "status": "Connected (Secure REST Endpoint)",
@@ -259,9 +270,11 @@ def fetch_materials_api_data(api_key, query):
         "query": query
     }
 
+@st.cache_data
 def app_predict(query, elements, temp):
     return [f"{query[:6]}-Node-{elem.split(' ')[0]}" for elem in elements]
 
+@st.cache_data
 def verify_rbac_permission(role, feature_key):
     permissions = {
         "Junior Researcher": ["advanced_solvers", "inverse_design"],
@@ -271,6 +284,7 @@ def verify_rbac_permission(role, feature_key):
     allowed = permissions.get(role, [])
     return feature_key in allowed
 
+@st.cache_data
 def generate_executive_report_html(role, query, temp, scale, alpha, beta, residual, batch_df):
     html = f"""
     <html>
