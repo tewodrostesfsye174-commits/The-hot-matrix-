@@ -1,4 +1,4 @@
-# math_engine.py - Complete Backend Computational & Materials Science Engine (Safe Caching)
+# math_engine.py - Complete Backend Computational & Materials Science Engine (Pillar 1 Upgraded)
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -22,12 +22,20 @@ def simulate_reagent_mixing(chosen_reagents, curing_temp):
     purity = round(np.random.uniform(94.5, 99.9), 2)
     density = round(np.random.uniform(1.5, 5.8), 2)
     
+    # Pillar 1: Thermodynamic & Mechanical Property Estimation Vectors
+    enthalpy_formation = round(np.random.uniform(-450.0, -50.0), 2) # kJ/mol
+    heat_capacity = round(np.random.uniform(30.0, 120.0), 2)       # J/(mol·K)
+    fracture_toughness = round(np.random.uniform(1.2, 12.5), 2)    # MPa·m^0.5
+    glass_transition = round(np.random.uniform(50.0, 350.0), 2)    # °C
+    
     if "Carbon Nanotube (CNT)" in chosen_reagents or "Graphene Oxide (GO)" in chosen_reagents:
         predicted_phase = "Nanocomposite Crystalline Matrix"
         derived_scale = 2.4
+        fracture_toughness += 4.0
     elif "Lithium Iron Phosphate (LiFePO4)" in chosen_reagents:
         predicted_phase = "Olivine Cathode Framework"
         derived_scale = 1.8
+        enthalpy_formation -= 120.0
     else:
         predicted_phase = "Polycrystalline Ceramic Lattice"
         derived_scale = 2.0
@@ -39,6 +47,10 @@ def simulate_reagent_mixing(chosen_reagents, curing_temp):
         "predicted_phase": predicted_phase,
         "purity": purity,
         "density": density,
+        "enthalpy_formation": enthalpy_formation,
+        "heat_capacity": heat_capacity,
+        "fracture_toughness": fracture_toughness,
+        "glass_transition": glass_transition,
         "derived_scale": derived_scale,
         "derived_temp": curing_temp,
         "query_sig": query_sig
@@ -84,7 +96,7 @@ def run_batch_simulation(queries, curing_temp, scale):
 
 @st.cache_data
 def run_inverse_design_screening(targets, available_shelf):
-    seed_val = int(targets.get("strength", 200) + targets.get("conductivity", 0.01) * 100 + targets.get("viscosity", 1000) / 100)
+    seed_val = int(targets.get("strength", 200) + targets.get("enthalpy", -200) + targets.get("toughness", 5) * 10 + targets.get("conductivity", 0.01) * 100)
     np.random.seed(seed_val)
     
     n = len(available_shelf)
@@ -93,19 +105,30 @@ def run_inverse_design_screening(targets, available_shelf):
     viscosities = np.random.uniform(10, 10000, n)
     conductivities = np.random.uniform(0.0001, 100.0, n)
     tgs = np.random.uniform(-50, 500, n)
+    enthalpies = np.random.uniform(-500, -50, n)
+    toughnesses = np.random.uniform(1.0, 15.0, n)
     
     t_str = targets.get("strength", 200)
+    t_enth = targets.get("enthalpy", -200)
+    t_tough = targets.get("toughness", 5.0)
     t_cond = targets.get("conductivity", 0.01)
     
     match_scores = []
-    for s, c in zip(strengths, conductivities):
-        penalty = abs(s - t_str) / (t_str if t_str != 0 else 1.0) + abs(c - t_cond) / (t_cond if t_cond != 0 else 1.0)
+    for s, h, k, c in zip(strengths, enthalpies, toughnesses, conductivities):
+        penalty = (
+            abs(s - t_str) / (abs(t_str) if t_str != 0 else 1.0) + 
+            abs(h - t_enth) / (abs(t_enth) if t_enth != 0 else 1.0) +
+            abs(k - t_tough) / (abs(t_tough) if t_tough != 0 else 1.0) +
+            abs(c - t_cond) / (t_cond if t_cond != 0 else 1.0)
+        )
         score = max(40.0, round(100.0 - (penalty * 12.0), 2))
         match_scores.append(score)
 
     df = pd.DataFrame({
         "Reagent / Candidate": available_shelf,
         "Predicted Strength (MPa)": strengths,
+        "Enthalpy ΔHf (kJ/mol)": enthalpies,
+        "Fracture Toughness (MPa·m^0.5)": toughnesses,
         "Density (g/cm³)": densities,
         "Viscosity (cP)": viscosities,
         "Conductivity (S/cm)": conductivities,
