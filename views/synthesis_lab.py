@@ -1,19 +1,23 @@
-# views/synthesis_lab.py - Virtual Synthesis & Inverse Design (Pillar 1 Upgraded & Expanded Domains)
+# views/synthesis_lab.py - Virtual Synthesis & Inverse Design (Pillar 2 Scaled & Custom Search)
 import streamlit as st
 import pandas as pd
 from math_engine import get_standard_reagents, simulate_reagent_mixing, run_inverse_design_screening, verify_rbac_permission
 
 def render():
-    st.markdown("### 🧪 Virtual Synthesis Laboratory")
-    st.markdown("<p style='color: #8b949e; font-size: 13px;'>Select standard chemical reagents from the shelf to drive the mathematical reaction chamber.</p>", unsafe_allow_html=True)
+    st.markdown("### 🧪 Virtual Synthesis Laboratory & 10,000+ Catalog Index")
+    st.markdown("<p style='color: #8b949e; font-size: 13px;'>Select standard enterprise chemicals or input any custom chemical formula to drive the multi-domain simulation and screening engine.</p>", unsafe_allow_html=True)
 
     col_shelf, col_flask = st.columns([1, 1])
 
     with col_shelf:
-        st.markdown("##### 🗄️ Reagent Shelf (1,000+ Standard Chemicals)")
+        st.markdown("##### 🗄️ Reagent Shelf (10,000+ Indexed Compounds)")
         available_shelf = get_standard_reagents()
-        chosen_reagents = st.multiselect("Select Reagents for Synthesis", available_shelf, default=["Silicon Dioxide (SiO2)", "Carbon Nanotube (CNT)"], key="synth_reagents")
-        synthesis_temp_input = st.slider("Flask Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=180.0, step=5.0, key="synth_temp")
+        chosen_reagents = st.multiselect("Select Reagents for Synthesis", available_shelf, default=["Sulfuric Acid Solution 35% (H2SO4)", "Lead Dioxide Cathode (PbO2)"], key="synth_reagents")
+        
+        # Pillar 2: Custom Formula Search Input
+        custom_formula_input = st.text_input("🔍 Custom Chemical Formula Search", placeholder="e.g., PbSO4, LiPF6, Epoxy Resin", key="custom_chem_search")
+        
+        synthesis_temp_input = st.slider("Flask Curing Temperature (°C)", min_value=20.0, max_value=300.0, value=25.0, step=5.0, key="synth_temp")
 
     with col_flask:
         st.markdown("##### ⚗️ Reaction Flask Chamber")
@@ -21,7 +25,7 @@ def render():
             st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, synthesis_temp_input)
         
         if "flask_result" not in st.session_state:
-            st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, 180.0)
+            st.session_state.flask_result = simulate_reagent_mixing(chosen_reagents, 25.0)
         
         res = st.session_state.flask_result
         st.markdown(f"""
@@ -67,13 +71,13 @@ def render():
         with st.expander("⚡ Electrochemical & Thermal Domain Targets (Batteries/Electronics)", expanded=False):
             col_b1, col_b2 = st.columns(2)
             with col_b1:
-                target_cond_input = st.number_input("Target Ionic Conductivity (S/cm)", min_value=0.0, max_value=10000.0, value=0.01, step=0.001)
-                target_diel_input = st.number_input("Target Dielectric Constant (ε_r)", min_value=1.0, max_value=500.0, value=10.0, step=0.5)
+                target_cond_input = st.number_input("Target Ionic Conductivity (S/cm)", min_value=0.0, max_value=10000.0, value=0.75, step=0.01)
+                target_diel_input = st.number_input("Target Dielectric Constant (ε_r)", min_value=1.0, max_value=500.0, value=78.0, step=1.0)
             with col_b2:
-                target_tg_input = st.number_input("Target Glass Transition Temp Tg (°C)", min_value=-273.0, max_value=2000.0, value=80.0, step=5.0)
-                target_bg_input = st.number_input("Target Bandgap Energy (eV)", min_value=0.0, max_value=15.0, value=2.5, step=0.1)
+                target_tg_input = st.number_input("Target Glass Transition Temp Tg (°C)", min_value=-273.0, max_value=2000.0, value=10.0, step=5.0)
+                target_bg_input = st.number_input("Target Bandgap Energy (eV)", min_value=0.0, max_value=15.0, value=1.4, step=0.1)
 
-        if st.button("🚀 Screen Reagents via Multi-Domain Vector", use_container_width=True, key="btn_screen"):
+        if st.button("🚀 Screen Reagents & Custom Formulas via Multi-Domain Vector", use_container_width=True, key="btn_screen"):
             targets_dict = {
                 "strength": target_str_input, 
                 "enthalpy": target_enth_input,
@@ -87,7 +91,8 @@ def render():
                 "bandgap": target_bg_input,
                 "tg": target_tg_input
             }
-            screening_df = run_inverse_design_screening(targets_dict, available_shelf)
+            # Pass custom formula input into the backend screening engine
+            screening_df = run_inverse_design_screening(targets_dict, available_shelf, custom_formula_input)
             st.dataframe(screening_df, use_container_width=True)
     else:
         st.info("Inverse design & multi-domain screening restricted for current clearance level.")
