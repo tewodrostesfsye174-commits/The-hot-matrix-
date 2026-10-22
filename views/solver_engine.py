@@ -32,7 +32,7 @@ opt_alpha, opt_beta, opt_residual = run_optimized_solver(Z, X, Y, optimizer_meth
 with col_res:
     st.markdown("#### Execution Results & Metrics")
     st.markdown(f"""
-        <div class="metric-card">
+        <div style="background-color: #111625; border: 1px solid #30363d; padding: 16px; border-radius: 10px; margin-bottom: 14px;">
             <div style="font-weight: 700; margin-bottom: 4px; font-size: 14px;">Optimization Converged</div>
             <div style="font-size: 13px; color: #f0f6fc;">Max Efficiency: {max(efficiencies):.4f} &bull; Residual: {opt_residual:.6f}</div>
         </div>
@@ -44,7 +44,6 @@ with col_res:
     })
     st.dataframe(results_df, use_container_width=True)
 
-# Elastic Tensor Matrix Component
 if verify_rbac_permission(st.session_state.get('user_role', 'Enterprise Admin'), "elastic_tensor"):
     st.markdown("---")
     st.markdown("#### 📐 Elastic Tensor Stiffness Matrix & Mechanical Moduli")
@@ -59,7 +58,6 @@ if verify_rbac_permission(st.session_state.get('user_role', 'Enterprise Admin'),
                 </div>
             """, unsafe_allow_html=True)
 
-# Spatial Visualizations & Pareto Frontier
 st.markdown("---")
 st.markdown("#### Spatial & Multi-Objective Visualizations")
 col_v1, col_v2, col_v3 = st.columns(3)
