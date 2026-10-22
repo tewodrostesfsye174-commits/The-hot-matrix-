@@ -1,15 +1,20 @@
-# app.py - Main Multi-Page Streamlit Entry Point (Clean Routing)
+# app.py - Main Entry Point for TensorLab Enterprise Materials Platform
 import streamlit as st
+import os
+import sys
+
+# Ensure views directory is in path
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 # Page Configuration
 st.set_page_config(
-    page_title="TensorLab | Materials Informatics Platform", 
-    page_icon="🧪", 
+    page_title="TensorLab | Enterprise Materials Informatics",
+    page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Enterprise Dark-Theme Styling Injection
+# Custom Enterprise Dark-Theme Styling
 st.markdown("""
     <style>
     .main { background-color: #0b0f19; color: #f0f6fc; }
@@ -24,13 +29,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar Authentication & Navigation Hub
+# Sidebar Authentication & Navigation
 st.sidebar.markdown("### 🔬 TENSORLAB")
 st.sidebar.markdown("<p style='color: #8b949e; font-size: 12px;'>Enterprise Materials Informatics Platform v2.6</p>", unsafe_allow_html=True)
 
-# Clearance Role State Management
 user_role = st.sidebar.selectbox(
-    "Active Clearance Tier", 
+    "Active Clearance Tier",
     ["Enterprise Admin", "Senior Materials Scientist", "Junior Researcher"],
     key="user_role"
 )
@@ -38,32 +42,33 @@ user_role = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 st.sidebar.markdown("#### 🧭 Navigation Menu")
 
-# Main Multi-Page Navigation Selector
 page_selection = st.sidebar.radio(
-    "Select Module", 
-    [
-        "Home Overview", 
-        "Synthesis Lab", 
-        "Solver Engine", 
-        "Structural Nodes", 
-        "Thermal & Fluid Dynamics"
-    ],
+    "Select View",
+    ["Home Overview", "Synthesis Lab", "Solver Engine", "Structural Nodes", "Thermal & Fluid Dynamics"],
     label_visibility="collapsed"
 )
 
 st.sidebar.markdown("---")
-if st.sidebar.button("🚪 Logout Session", use_container_width=True):
-    st.session_state.clear()
-    st.rerun()
+if st.sidebar.button("🔓 Logout Session"):
+    st.sidebar.success("Session terminated safely.")
 
-# Direct View Dispatcher Routing (Without caching the view wrapper)
+# Clean Isolated Page Routing (Prevents view overlapping)
 if page_selection == "Home Overview":
-    import views.home_overview
+    import views.home_overview as view_home
+    view_home.render()
+
 elif page_selection == "Synthesis Lab":
-    import views.synthesis_lab
+    import views.synthesis_lab as view_synth
+    view_synth.render()
+
 elif page_selection == "Solver Engine":
-    import views.solver_engine
+    import views.solver_engine as view_solver
+    view_solver.render()
+
 elif page_selection == "Structural Nodes":
-    import views.structural_nodes
+    import views.structural_nodes as view_struct
+    view_struct.render()
+
 elif page_selection == "Thermal & Fluid Dynamics":
-    import views.thermal_fluid
+    import views.thermal_fluid as view_thermal
+    view_thermal.render()
