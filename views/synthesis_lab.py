@@ -1,4 +1,4 @@
-# views/synthesis_lab.py - Virtual Synthesis & Inverse Design (Fully Upgraded)
+# views/synthesis_lab.py - Virtual Synthesis & Inverse Design (Pillar 1 Upgraded)
 import streamlit as st
 import pandas as pd
 from math_engine import get_standard_reagents, simulate_reagent_mixing, run_inverse_design_screening, verify_rbac_permission
@@ -29,7 +29,11 @@ def render():
                 <span style="font-size: 26px;">🧪</span><br>
                 <span style="color: #58a6ff; font-weight: 700; font-size: 14px;">Status: {res.get('status')}</span><br>
                 <span style="font-size: 13px; color: #f0f6fc;">Predicted Phase: <b>{res.get('predicted_phase')}</b></span><br>
-                <span style="font-size: 12px; color: #8b949e;">Purity: {res.get('purity')}% &bull; Density: {res.get('density')} g/cm³ &bull; Query: `{res.get('query_sig')}`</span>
+                <span style="font-size: 12px; color: #8b949e;">
+                    Enthalpy $\\Delta H_f$: {res.get('enthalpy_formation')} kJ/mol &bull; 
+                    Toughness: {res.get('fracture_toughness')} MPa&middot;m<sup>0.5</sup><br>
+                    Purity: {res.get('purity')}% &bull; Density: {res.get('density')} g/cm³ &bull; Query: `{res.get('query_sig')}`
+                </span>
             </div>
         """, unsafe_allow_html=True)
 
@@ -38,8 +42,15 @@ def render():
     st.markdown("<p style='color: #8b949e; font-size: 13px;'>Expand domain categories below to configure multi-attribute property vectors for custom adhesives, batteries, or structural materials.</p>", unsafe_allow_html=True)
 
     if verify_rbac_permission(st.session_state.get('user_role', 'Enterprise Admin'), "inverse_design"):
-        with st.expander("⚙️ Mechanical Domain Targets", expanded=True):
-            target_str_input = st.number_input("Target Strength (MPa)", min_value=1.0, max_value=2000.0, value=200.0, step=10.0)
+        with st.expander("⚙️ Mechanical & Thermodynamic Domain Targets", expanded=True):
+            col_t1, col_t2, col_t3 = st.columns(3)
+            with col_t1:
+                target_str_input = st.number_input("Target Strength (MPa)", min_value=1.0, max_value=2000.0, value=200.0, step=10.0)
+            with col_t2:
+                target_enth_input = st.number_input("Target Enthalpy ΔHf (kJ/mol)", min_value=-1000.0, max_value=0.0, value=-220.0, step=10.0)
+            with col_t3:
+                target_tough_input = st.number_input("Target Toughness (MPa·m^0.5)", min_value=0.5, max_value=50.0, value=4.5, step=0.5)
+
             target_den_input = st.number_input("Target Density (g/cm³)", min_value=0.1, max_value=50.0, value=2.5, step=0.1)
 
         with st.expander("🧪 Rheological & Fluid Domain Targets (Adhesives/Coatings)", expanded=False):
@@ -52,6 +63,8 @@ def render():
         if st.button("🚀 Screen Reagents via Multi-Domain Vector", use_container_width=True, key="btn_screen"):
             targets_dict = {
                 "strength": target_str_input, 
+                "enthalpy": target_enth_input,
+                "toughness": target_tough_input,
                 "density": target_den_input,
                 "viscosity": target_visc_input, 
                 "conductivity": target_cond_input, 
